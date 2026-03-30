@@ -1,0 +1,1648 @@
+doctype html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOTr-HRDD Signatory Portal</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: { 
+                        brand: { 
+                            100: '#dbeafe', 
+                            300: '#93c5fd', 
+                            500: '#3b82f6', 
+                            600: '#2563eb', 
+                            800: '#1e40af' 
+                        } 
+                    }
+                }
+            }
+        }
+        
+        // Dark Mode Initialization
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+
+    <style>
+        body { 
+            font-family: 'Inter', 'Plus Jakarta Sans', sans-serif; 
+            box-sizing: border-box; 
+        }
+        .font-display { 
+            font-family: 'Space Grotesk', sans-serif; 
+        }
+        .font-body-modern { 
+            font-family: 'Inter', sans-serif; 
+        }
+
+        /* Scrollbar Styling */
+        .custom-scrollbar::-webkit-scrollbar, .custom-scroll::-webkit-scrollbar { 
+            width: 8px; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-track, .custom-scroll::-webkit-scrollbar-track { 
+            background: transparent; 
+            border-radius: 10px; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb, .custom-scroll::-webkit-scrollbar-thumb { 
+            background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%); 
+            border-radius: 10px; 
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.1); 
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover, .custom-scroll::-webkit-scrollbar-thumb:hover { 
+            background: linear-gradient(180deg, #3b82f6 0%, #1e40af 100%); 
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { 
+            background: linear-gradient(180deg, rgba(96, 165, 250, 0.6) 0%, rgba(59, 130, 246, 0.6) 100%); 
+        }
+        
+        #app-sidebar, main, .custom-scrollbar, .custom-scroll { 
+            scroll-behavior: smooth; 
+        }
+
+        /* Menu Items */
+        .menu-item { 
+            display: flex; 
+            width: 100%; 
+            align-items: center; 
+            gap: 0.75rem; 
+            border-radius: 0.5rem; 
+            padding: 0.625rem 1rem; 
+            font-weight: 500; 
+            transition: all 0.2s; 
+        }
+        .menu-item-inactive { 
+            color: #4b5563; 
+        }
+        .menu-item-inactive:hover { 
+            background-color: #f3f4f6; 
+            color: #111827; 
+        }
+        .dark .menu-item-inactive:hover { 
+            background-color: rgba(255,255,255,0.05); 
+            color: #e5e7eb; 
+        }
+        .menu-item-active, .nav-item.active { 
+            background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%) !important; 
+            color: #1e40af !important; 
+            font-weight: 600; 
+            border-left: 4px solid #3b82f6; 
+        }
+        .dark .menu-item-active, .dark .nav-item.active { 
+            background: linear-gradient(135deg, #1e3a8a 0%, #0c2340 100%) !important; 
+            color: #93c5fd !important; 
+            border-left: 4px solid #3b82f6; 
+        }
+
+        /* Form Inputs */
+        input[type="text"], input[type="password"], input[type="date"], input[type="time"], select, textarea { 
+            transition: all 0.3s ease; 
+            border: 2px solid #e2e8f0 !important; 
+        }
+        input:focus, select:focus, textarea:focus { 
+            border-color: #3b82f6 !important; 
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important; 
+            outline: none; 
+        }
+        .dark input, .dark select, .dark textarea { 
+            border-color: #475569 !important; 
+            background-color: rgba(15, 23, 42, 0.5) !important; 
+            color: white; 
+        }
+        .dark input:focus, .dark select:focus, .dark textarea:focus { 
+            border-color: #60a5fa !important; 
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1) !important; 
+        }
+
+        /* PDF HIDDEN CONTAINERS */
+        .pdf-hidden-container { 
+            position: absolute; 
+            top: -9999px; 
+            left: -9999px; 
+            z-index: -100; 
+        }
+        .avoid-break { 
+            page-break-inside: avoid !important; 
+            break-inside: avoid !important; 
+        }
+        
+        /* Memo PDF Styles */
+        #memo-content { 
+            font-family: 'Book Antiqua', 'Times New Roman', serif; 
+            background-color: white; 
+            padding: 30px 40px; 
+            color: black; 
+            width: 800px; 
+        }
+        .memo-header { 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            margin-bottom: 15px; 
+            border-bottom: none; 
+        }
+        .memo-logos { 
+            flex-shrink: 0; 
+            display: flex; 
+            gap: 10px; 
+        }
+        .memo-logos img { 
+            height: 80px; 
+            width: 80px; 
+            object-fit: contain; 
+        }
+        .memo-title-text p { 
+            margin: 0; 
+            line-height: 1.1; 
+        }
+        .memo-body-text { 
+            display: flex; 
+            margin-left: 10px; 
+            text-align: justify; 
+            font-size: 11pt; 
+            font-family: 'Book Antiqua', serif; 
+            line-height: 1.3; 
+        }
+
+        /* Nomination Form PDF Styles */
+        .pdf-wrapper { 
+            font-family: "Times New Roman", serif; 
+            background-color: white; 
+            color: black; 
+            width: 800px; 
+            padding: 20px; 
+        }
+        .pdf-wrapper p.MsoNormal { 
+            margin: 0cm; 
+            font-size: 11.0pt; 
+            font-family: "Book Antiqua", serif; 
+            line-height: 1.2; 
+        }
+        .pdf-wrapper .label1 { 
+            font-weight: bold; 
+            font-size: 10.0pt; 
+            font-family: "Book Antiqua", serif; 
+        }
+        .pdf-wrapper .input-line-pdf { 
+            border: none; 
+            border-bottom: 1px solid black; 
+            width: 98%; 
+            display: inline-block; 
+            min-height: 16px; 
+            font-family: "Book Antiqua", serif; 
+            font-size: 11pt; 
+            background: transparent; 
+        }
+        .pdf-wrapper .MsoNormalTable { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-size: 10.0pt; 
+            font-family: "Times New Roman", serif; 
+        }
+        .pdf-wrapper td { 
+            padding: 3.75pt; 
+        }
+        .header-republic { 
+            font-size: 14.0pt; 
+            font-family: "Book Antiqua", serif; 
+            margin: 0; 
+        }
+        .header-dept { 
+            font-size: 14.0pt; 
+            font-family: "Book Antiqua", serif; 
+            font-weight: bold; 
+            margin: 0; 
+        }
+        .check-slot { 
+            display: inline-block; 
+            width: 20px; 
+            text-align: center; 
+            font-weight: bold; 
+        }
+        .pdf-list { 
+            padding-left: 25px; 
+            margin: 0; 
+            list-style-type: decimal; 
+        }
+        .pdf-list li { 
+            margin-bottom: 3.75pt; 
+            padding-left: 5px; 
+        }
+
+        /* Animations */
+        .animate-fade-in-up { 
+            animation: fadeInUp 0.4s ease-out; 
+        }
+        @keyframes fadeInUp { 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+
+        .dropdown-open { 
+            display: flex !important; 
+            animation: dropDownFadeIn 0.2s ease-out; 
+        }
+        @keyframes dropDownFadeIn { 
+            from { opacity: 0; transform: translateY(-10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        
+        .folder-content { 
+            transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out; 
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-50 overflow-hidden">
+
+    <div id="pdf-memo-container" class="pdf-hidden-container">
+        <div id="memo-content">
+            <div class="memo-header avoid-break">
+                <div class="memo-logos">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Department_of_Transportation_%28Philippines%29.svg/330px-Department_of_Transportation_%28Philippines%29.svg.png" alt="DOTr" crossorigin="anonymous">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Bagong_Pilipinas_logo.png" alt="Bagong Pilipinas" crossorigin="anonymous">
+                </div>
+                <div class="memo-title-text">
+                    <p style="font-size: 13pt; margin: 0; font-family: 'Book Antiqua', serif; line-height: 1.2;">Republic of the Philippines</p>
+                    <p style="font-size: 14pt; font-weight: bold; margin: 0; text-transform: uppercase; font-family: 'Book Antiqua', serif; line-height: 1.2;">DEPARTMENT OF TRANSPORTATION</p>
+                </div>
+            </div>
+
+            <div class="avoid-break" style="font-size: 16pt; font-weight: bold; margin-top: 40px; margin-bottom: 30px; text-transform: uppercase; text-align: left; font-family: 'Book Antiqua', serif;">MEMORANDUM</div>
+
+            <table class="avoid-break" style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12pt; font-family: 'Book Antiqua', serif;">
+                <tr>
+                    <td style="width: 80px; padding: 6px 0; vertical-align: top;">To</td>
+                    <td style="width: 20px; text-align: center; padding: 6px 0; vertical-align: top;">:</td>
+                    <td style="font-weight: bold; padding: 6px 0;">All Concerned Personnel</td>
+                </tr>
+                <tr>
+                    <td style="padding: 6px 0; vertical-align: top;">From</td>
+                    <td style="text-align: center; padding: 6px 0; vertical-align: top;">:</td>
+                    <td style="font-weight: bold; padding: 6px 0;">
+                        The Chief Administrative Officer<br>
+                        <span style="font-weight: normal;">For Human Resource Development Division</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 6px 0; vertical-align: top;">Subject</td>
+                    <td style="text-align: center; padding: 6px 0; vertical-align: top;">:</td>
+                    <td style="font-weight: bold; padding: 6px 0; text-transform: uppercase; line-height: 1.3;">ATTENDANCE TO THE <span id="memo-subject-training"></span></td>
+                </tr>
+                <tr>
+                    <td style="padding: 6px 0; vertical-align: top;">Date</td>
+                    <td style="text-align: center; padding: 6px 0; vertical-align: top;">:</td>
+                    <td style="font-weight: bold; padding: 6px 0;" id="memo-date-field"></td>
+                </tr>
+            </table>
+
+            <hr style="border: 0; border-top: 2px solid black; margin-bottom: 25px;">
+
+            <div class="avoid-break" style="display: flex; margin-bottom: 20px; text-align: justify; font-size: 12pt; font-family: 'Book Antiqua', serif; line-height: 1.4;">
+                <div style="width: 45px; flex-shrink: 0;">1.0</div>
+                <div style="flex-grow: 1;">
+                    This refers to the approved nominations of the listed personnel to the learning program entitled “<b id="memo-body-title"></b>,” set for <b id="memo-body-date"></b> from <b id="memo-time-start"></b> to <b id="memo-time-end"></b>, to be conducted by the <b id="memo-provider"></b> via <b id="memo-mode"></b>.
+                </div>
+            </div>
+
+            <table class="avoid-break" style="width: 95%; margin: 25px auto; border-collapse: collapse; font-size: 11pt; font-family: 'Book Antiqua', serif;">
+                <thead>
+                    <tr>
+                        <th colspan="2" style="border: 1px solid black; padding: 10px; text-align: center; background-color: white; font-weight: bold;">NOMINATED PARTICIPANTS</th>
+                    </tr>
+                    <tr>
+                        <th style="border: 1px solid black; padding: 10px; text-align: center; width: 50%; font-weight: bold;">Name/Position</th>
+                        <th style="border: 1px solid black; padding: 10px; text-align: center; width: 50%; font-weight: bold;">Office/Division</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="border: 1px solid black; padding: 10px;">
+                            <b id="memo-emp-name"></b><br>
+                            <i id="memo-emp-pos"></i>
+                        </td>
+                        <td style="border: 1px solid black; padding: 10px; vertical-align: top;" id="memo-emp-office"></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="avoid-break" style="display: flex; margin-bottom: 20px; text-align: justify; font-size: 12pt; font-family: 'Book Antiqua', serif; line-height: 1.4;">
+                <div style="width: 45px; flex-shrink: 0;">2.0</div>
+                <div style="flex-grow: 1;">
+                    <span id="memo-objectives"></span>
+                </div>
+            </div>
+
+            <div class="avoid-break" style="display: flex; margin-bottom: 20px; text-align: justify; font-size: 12pt; font-family: 'Book Antiqua', serif; line-height: 1.4;">
+                <div style="width: 45px; flex-shrink: 0;">3.0</div>
+                <div style="flex-grow: 1;">
+                    In view of this, the participants are hereby directed to attend the said training program. Further, for the Learning and Development (L&D) program to be fully credited, they are required to submit all post-training requirements relative to the activity to the Human Resource Development Division (HRDD), following these schedules:
+                </div>
+            </div>
+
+            <table class="avoid-break" style="width: 95%; margin: 25px auto; border-collapse: collapse; font-size: 11pt; font-family: 'Book Antiqua', serif;">
+                <thead>
+                    <tr>
+                        <th style="border: 1px solid black; padding: 10px; font-weight: bold; text-align: center;">Training Requirement(s)</th>
+                        <th style="border: 1px solid black; padding: 10px; font-weight: bold; text-align: center;">Date of Submission</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="border: 1px solid black; padding: 10px; vertical-align: top;">
+                            1. Post-Training Evaluation Form & Post-Training Report (PTR)
+                        </td>
+                        <td style="border: 1px solid black; padding: 10px; text-align: center; vertical-align: top;">
+                            <i>Within seven (7) days of the training's completion.</i><br><br>
+                            <b><span style="color: blue; text-decoration: underline;">https://bit.ly/PTRL1-Evaluation</span></b>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="border: 1px solid black; padding: 10px;">
+                            2. Certificate of Completion/Attendance
+                        </td>
+                        <td style="border: 1px solid black; padding: 10px; text-align: center;">
+                            <i>Within three (3) days from receipt</i>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            
+             <div class="avoid-break" style="display: flex; margin-bottom: 20px; text-align: justify; font-size: 12pt; font-family: 'Book Antiqua', serif; line-height: 1.4;">
+                <div style="width: 45px; flex-shrink: 0;">4.0</div>
+                <div style="flex-grow: 1;">
+                    All submissions shall be in electronic form, preferably via email, and with the use of digital signatures, if available.
+                </div>
+            </div>
+
+             <div class="avoid-break" style="display: flex; margin-bottom: 20px; text-align: justify; font-size: 12pt; font-family: 'Book Antiqua', serif; line-height: 1.4;">
+                <div style="width: 45px; flex-shrink: 0;">5.0</div>
+                <div style="flex-grow: 1;">
+                    In case of non-attendance, the participants are directed to submit a justification to the HRDD (addressed to the Acting Undersecretary for Administration, Finance, and Procurement), no later than seven (7) working days after the supposed L&D activity. Please be advised that non-attendance may result in the participant being held responsible for the registration fee, at the discretion of the Department.
+                </div>
+            </div>
+
+             <div class="avoid-break" style="display: flex; margin-bottom: 40px; text-align: justify; font-size: 12pt; font-family: 'Book Antiqua', serif; line-height: 1.4;">
+                <div style="width: 45px; flex-shrink: 0;">6.0</div>
+                <div style="flex-grow: 1;">
+                    For information, guidance, and strict compliance.
+                </div>
+            </div>
+
+            <div class="avoid-break" style="margin-top: 50px; font-family: 'Book Antiqua', serif; font-size: 12pt;">
+                <div style="position: relative; width: 300px; height: 90px;">
+                    <img id="memo-signature-preview" src="" style="position: absolute; bottom: 10px; left: 0; max-height: 80px; max-width: 200px; mix-blend-mode: multiply; display: none; z-index: 1;">
+                    
+                    <div style="font-weight: bold; text-transform: uppercase; margin-bottom: 5px; position: absolute; bottom: 0; z-index: 2;">MARY GRACE L. ESCOTO</div>
+                </div>
+                <div style="margin-top: 5px;">Chief Administrative Officer</div> 
+            </div>
+        </div>
+    </div>
+    
+    <div id="pdf-template-container" class="pdf-hidden-container">
+        <div id="pdf-content">
+            <style>
+                .pdf-wrapper { font-family: "Book Antiqua", Georgia, serif; font-size: 10pt; line-height: 1.4; background-color: white; color: black; width: 750px; padding: 20px 30px; box-sizing: border-box; margin: 0 auto; }
+                .pdf-wrapper table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+                .pdf-wrapper th, .pdf-wrapper td { border: 1px solid #000; padding: 5px 6px; vertical-align: top; text-align: left; }
+                .pdf-wrapper .logos { text-align: center; width: 160px; vertical-align: middle; white-space: nowrap; }
+                .pdf-wrapper .logos img { width: 60px; margin: 0 4px; vertical-align: middle; display: inline-block; }
+                .pdf-wrapper .header-text { text-align: left; padding: 10px !important; }
+                .pdf-wrapper .header-text span { font-size: 13pt; display: block; }
+                .pdf-wrapper .header-text strong { font-size: 13pt; }
+                .pdf-wrapper .form-title { font-size: 11pt; font-weight: bold; text-align: center; }
+                .pdf-wrapper .section-header { background-color: #DDD9C3; font-weight: bold; font-size: 10pt; }
+                .pdf-wrapper .instructions { margin-bottom: 10px; font-size: 9pt; }
+                .pdf-wrapper .nested-table { width: auto; margin-top: 5px; margin-bottom: 5px; border: none; }
+                .pdf-wrapper .nested-table td { padding: 2px 6px; border: none; }
+                .pdf-wrapper ol { margin: 0; padding-left: 20px; }
+                .pdf-wrapper .yes-no-list { list-style: none; padding: 0; margin: 0; }
+                .pdf-wrapper .yes-no-list li { margin-bottom: 3px; }
+                .pdf-wrapper .terms-header { background-color: #808080; color: #fff; font-weight: bold; text-align: center; padding: 5px; font-size: 11pt; border: 1px solid #000; margin-top: 20px; margin-bottom: 10px; }
+                .pdf-wrapper .terms-list { margin-top: 0; padding-left: 20px; }
+                .pdf-wrapper .terms-list li { margin-bottom: 8px; text-align: justify; }
+                .pdf-wrapper .sub-list { list-style-type: lower-alpha; padding-left: 20px; }
+                .pdf-wrapper .signature-area { height: 50px; display: flex; justify-content: center; align-items: flex-end; margin-top: 10px; }
+                .pdf-wrapper .signature-area img { max-height: 50px; max-width: 180px; mix-blend-mode: multiply; display: none; }
+                .pdf-wrapper .footnote { font-size: 8pt; margin-top: 20px; }
+                .pdf-wrapper .footnote hr { border: 0; border-top: 1px solid #000; width: 33%; margin-left: 0; margin-bottom: 5px; }
+                .pdf-wrapper .input-line-pdf { border-bottom: 1px solid black; display: inline-block; min-height: 14px; width: 90%; }
+                .pdf-wrapper .check-slot { display: inline-block; width: 15px; text-align: center; font-weight: bold; border-bottom: 1px solid #000; }
+            </style>
+            <div class="pdf-wrapper">
+                <table>
+                    <tr>
+                        <td rowspan="3" class="logos">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Department_of_Transportation_%28Philippines%29.svg/330px-Department_of_Transportation_%28Philippines%29.svg.png" alt="DOTr" crossorigin="anonymous">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Bagong_Pilipinas_logo.png" alt="Bagong Pilipinas" crossorigin="anonymous">
+                        </td>
+                        <td colspan="3" class="header-text">
+                            <span>Republic of the Philippines</span>
+                            <strong>Department of Transportation</strong>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Document No:<br>DOTr-HRDD-Forms-001</td>
+                        <td>Rev. No.: 005</td>
+                        <td>Effective Date: _______ 2025</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="form-title">LEARNING AND DEVELOPMENT NOMINATION FORM</td>
+                    </tr>
+                </table>
+
+                <div class="instructions">
+                    <strong>INSTRUCTIONS:</strong> This form is used in nominating an employee to attend a Learning & Development Intervention (LDI). Fill out this form and attach the signed and scanned copy in the Online Nomination Form.
+                </div>
+
+                <table>
+                    <tr><td colspan="3" class="section-header">I. Training/Program Information</td></tr>
+                    <tr><td colspan="3"><strong>Title of Training/Course:</strong> <span class="input-line-pdf" id="pdf-title" style="width: 80%;"></span></td></tr>
+                    <tr>
+                        <td style="width: 50%;"><strong>Date of Training/Course:</strong> <span class="input-line-pdf" id="pdf-date-course" style="width: 50%;"></span></td>
+                        <td colspan="2"><strong>Date of Filing:</strong> <span class="input-line-pdf" id="pdf-date-filing" style="width: 60%;"></span></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <strong>Type of Competency to be Addressed:</strong>
+                            <table class="nested-table">
+                                <tr><td style="width:15px; border:1px solid #000; text-align:center;" id="pdf-comp-core"></td><td>Core Competency</td></tr>
+                                <tr><td style="width:15px; border:1px solid #000; text-align:center;" id="pdf-comp-lead"></td><td>Leadership Competency</td></tr>
+                                <tr><td style="width:15px; border:1px solid #000; text-align:center;" id="pdf-comp-func"></td><td>Functional Competency</td></tr>
+                            </table>
+                        </td>
+                        <td colspan="2"><strong>Venue:</strong> <span class="input-line-pdf" id="pdf-venue" style="width: 80%;"></span></td>
+                    </tr>
+
+                    <tr><td colspan="3" class="section-header">II. Participant's Information</td></tr>
+                    <tr>
+                        <td colspan="2" style="width: 50%;">
+                            <strong>Name of Personnel:</strong> <span class="input-line-pdf" id="pdf-name"></span><br><br>
+                            <strong>ID Number:</strong> <span class="input-line-pdf" id="pdf-id"></span><br><br>
+                            <strong>Email Address:</strong> <span class="input-line-pdf" id="pdf-email"></span>
+                        </td>
+                        <td><strong>Office/Unit Head:</strong> <span class="input-line-pdf" id="pdf-office" style="width: 95%;"></span></td>
+                    </tr>
+                    <tr>
+                        <td colspan="2"><strong>Position Title:</strong> <span class="input-line-pdf" id="pdf-position"></span></td>
+                        <td><strong>Immediate Supervisor:</strong> <span class="input-line-pdf" id="pdf-supervisor" style="width: 95%;"></span></td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <strong>Date Hired:</strong> <span class="input-line-pdf" id="pdf-hired" style="width: 60%;"></span><br><br>
+                            <strong>Status of Employment:</strong> <span class="input-line-pdf" id="pdf-status" style="width: 50%;"></span><br><br>
+                            <strong>Salary Grade:</strong> <span class="input-line-pdf" id="pdf-sg" style="width: 60%;"></span><br><br>
+                            <strong>Yrs./Months in DOTr Service:</strong> <span class="input-line-pdf" id="pdf-service" style="width: 40%;"></span><br><br>
+                            <strong>Contact/Viber Number:</strong> <span class="input-line-pdf" id="pdf-contact" style="width: 50%;"></span><br><br>
+                            <strong>Gender (Optional):</strong> <span class="input-line-pdf" id="pdf-gender" style="width: 50%;"></span>
+                        </td>
+                        <td>
+                            <strong>Name, Position and Office of the Designated Officer-in-Charge (for SG 24 and up):</strong><br>
+                            <span class="input-line-pdf" id="pdf-oic" style="width: 95%;"></span>
+                        </td>
+                    </tr>
+
+                    <tr><td colspan="3" class="section-header">III. Alternate/Substitute Participant's Information</td></tr>
+                    <tr>
+                        <td style="width: 50%;">
+                            <strong>Name of Personnel:</strong> <span class="input-line-pdf" id="pdf-asp-name"></span><br><br>
+                            <strong>ID Number:</strong> <span class="input-line-pdf" id="pdf-asp-id"></span><br><br>
+                            <strong>Email Address:</strong> <span class="input-line-pdf" id="pdf-asp-email"></span><br><br>
+                            <strong>Position Title:</strong> <span class="input-line-pdf" id="pdf-asp-position"></span><br><br>
+                            <strong>Date Hired:</strong> <span class="input-line-pdf" id="pdf-asp-hired"></span>
+                        </td>
+                        <td colspan="2">
+                            <strong>Status of Employment:</strong> <span class="input-line-pdf" id="pdf-asp-status" style="width: 60%;"></span><br><br>
+                            <strong>Salary Grade:</strong> <span class="input-line-pdf" id="pdf-asp-sg" style="width: 70%;"></span><br><br>
+                            <strong>Yrs./Months in DOTr Service:</strong> <span class="input-line-pdf" id="pdf-asp-service" style="width: 40%;"></span><br><br>
+                            <strong>Contact/Viber Number:</strong> <span class="input-line-pdf" id="pdf-asp-contact" style="width: 50%;"></span><br><br>
+                            <strong>Gender (Optional):</strong> <span class="input-line-pdf" id="pdf-asp-gender" style="width: 60%;"></span>
+                        </td>
+                    </tr>
+
+                    <tr><td colspan="3" class="section-header">IV. Justification of Nominee’s Attendance</td></tr>
+                    <tr><td colspan="3"><div id="pdf-justification" style="min-height: 50px; text-align: justify;"></div></td></tr>
+
+                    <tr><td colspan="3" class="section-header">V. Gender Equality, Disability and Social Inclusion (GEDSI)</td></tr>
+                    <tr>
+                        <td colspan="2">
+                            <ol>
+                                <li>Do you have mobility problems? Like difficulty in walking and/or climbing stairs?</li>
+                                <li>Are you having an emotional/behavioural problem?</li>
+                                <li>Do you have difficulty in reading and identifying speech sounds?</li>
+                                <li>Do you have difficulty communicating?</li>
+                                <li>Do you have difficulty remembering or concentrating?</li>
+                                <li>Do you have difficulty in doing simple arithmetic calculations?</li>
+                                <li>Do you have difficulty in reading even with corrective lenses?</li>
+                                <li>Do you have any difficulty in hearing?</li>
+                            </ol>
+                        </td>
+                        <td>
+                            <ul class="yes-no-list">
+                                <li><span id="pdf-g1-y" class="check-slot"></span> Yes &nbsp;&nbsp; <span id="pdf-g1-n" class="check-slot"></span> No</li>
+                                <li><span id="pdf-g2-y" class="check-slot"></span> Yes &nbsp;&nbsp; <span id="pdf-g2-n" class="check-slot"></span> No</li>
+                                <li><span id="pdf-g3-y" class="check-slot"></span> Yes &nbsp;&nbsp; <span id="pdf-g3-n" class="check-slot"></span> No</li>
+                                <li><span id="pdf-g4-y" class="check-slot"></span> Yes &nbsp;&nbsp; <span id="pdf-g4-n" class="check-slot"></span> No</li>
+                                <li><span id="pdf-g5-y" class="check-slot"></span> Yes &nbsp;&nbsp; <span id="pdf-g5-n" class="check-slot"></span> No</li>
+                                <li><span id="pdf-g6-y" class="check-slot"></span> Yes &nbsp;&nbsp; <span id="pdf-g6-n" class="check-slot"></span> No</li>
+                                <li><span id="pdf-g7-y" class="check-slot"></span> Yes &nbsp;&nbsp; <span id="pdf-g7-n" class="check-slot"></span> No</li>
+                                <li><span id="pdf-g8-y" class="check-slot"></span> Yes &nbsp;&nbsp; <span id="pdf-g8-n" class="check-slot"></span> No</li>
+                            </ul>
+                        </td>
+                    </tr>
+
+                    <tr><td colspan="3" class="section-header">VI. Social Inclusion</td></tr>
+                    <tr>
+                        <td colspan="2">
+                            <ol>
+                                <li>Are you a solo parent?</li>
+                                <li>Are you part of the Indigenous People group? (Specify: <span id="pdf-s2" class="input-line-pdf" style="width: 150px; border-bottom: none;"></span>)</li>
+                            </ol>
+                        </td>
+                        <td>
+                            <ul class="yes-no-list">
+                                <li><span id="pdf-s1-y" class="check-slot"></span> Yes &nbsp;&nbsp; <span id="pdf-s1-n" class="check-slot"></span> No</li>
+                                <li><span class="check-slot"></span> Yes &nbsp;&nbsp; <span class="check-slot"></span> No</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="3"><em><strong>This is to certify that I have briefed the nominees of the expected output, and we have agreed on how and when he/she will apply the new learning in the workplace.</strong></em></td>
+                    </tr>
+                    <tr style="page-break-inside: avoid;">
+                        <td style="width: 50%;">
+                            Signature of Primary Participant:<br>
+                            <div class="signature-area"><img id="pdf-user-signature-preview" src="" alt="Signature"></div>
+                        </td>
+                        <td colspan="2">
+                            Signature of Office/Unit Head:<br>
+                            <div class="signature-area"><img id="pdf-admin-signature-preview" src="" alt="Signature"></div>
+                        </td>
+                    </tr>
+                </table>
+
+                <div style="page-break-before: always;">
+                    <div class="terms-header">TERMS AND CONDITIONS</div>
+                    <p style="margin-bottom: 10px;">By submitting this Learning and Development Nomination Form, the parties agree to the following conditions regarding attendance and substitution:</p>
+                    <ol class="terms-list">
+                        <li><strong>ADVANCE NOTICE OF CANCELLATION.</strong> The Primary Participant shall notify the appropriate office at least three (3) days prior to the training if he/she will not pursue the scheduled Learning & Development Intervention (LDI).</li>
+                        <li><strong>FORMAL JUSTIFICATION AND SUBSTITUTION.</strong> The Primary Participant must provide a formal written justification for declining the training. Upon this formal notification, the Alternate/Substitute Participant (ASP) will be endorsed to attend the training.</li>
+                        <li><strong>SAME-DAY CANCELLATION.</strong> In cases in which the Primary Participant declines the training on the actual day of the event, the cancellation shall only be accepted if it is due to a major reason.</li>
+                        <li><strong>ACCEPTABLE MAJOR REASONS.</strong> Valid major reasons for same-day cancellation and the immediate endorsement of the Alternate/Substitute Participant (ASP) include the following:
+                            <ol class="sub-list">
+                                <li>Illness.</li>
+                                <li>Force majeure.</li>
+                                <li>Death.</li>
+                                <li>Urgent and critical official business directives from the department.</li>
+                            </ol>
+                        </li>
+                        <li><strong>RELEVANCE TO FUNCTIONS.</strong> The nomination to the LDI must be formally justified based on its relevance to the participant’s actual functions and specific development needs. The intervention must purposefully address identified core, leadership, or functional competencies.</li>
+                        <li><strong>APPROVAL AND ENDORSEMENT.</strong> The nomination, including the designation of the ASP, is only considered valid and final upon the complete briefing of the nominee and the official signature of the Office/Unit Head.</li>
+                    </ol>
+                    <div class="footnote"><hr><em>Revised Learning and Development Nomination Form</em>, DOTr-HRDD-Forms-001 | Rev. No.: 005, 2025</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="min-h-screen w-full m-0 p-0 text-gray-800 bg-gradient-to-br from-gray-50 via-blue-50 to-gray-50 dark:bg-gradient-to-br dark:from-gray-900 via-slate-900 dark:to-gray-900 transition-colors duration-300 overflow-y-auto">
+
+    <div id="super-login" class="flex h-full w-full min-h-full items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 z-[100] fixed inset-0">
+        <div class="w-full max-w-md p-8">
+            <div class="content-card bg-white rounded-2xl shadow-2xl p-8 animate-fade-in-up">
+                <div class="text-center mb-8">
+                    <div class="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-lg mb-4">
+                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                    </div>
+                    <h1 class="text-2xl font-bold font-display text-slate-800">Authorized Signatory</h1>
+                    <p class="text-slate-500 text-sm mt-1">Memo Directives Portal</p>
+                </div>
+                <form id="login-form" class="space-y-5">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Username</label>
+                        <input type="text" id="admin-id" class="w-full px-4 py-3 border border-slate-300 rounded-xl transition-all" placeholder="cao_signatory">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Password</label>
+                        <input type="password" id="admin-pass" class="w-full px-4 py-3 border border-slate-300 rounded-xl transition-all" placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">Secure Login</button>
+                </form>
+            </div>
+            <div class="mt-6 space-y-3 flex flex-col items-center">
+                <p class="text-white text-sm opacity-75">© 2024 Department of Transportation - HRDD</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="super-dashboard" class="hidden min-h-screen xl:flex w-full bg-gray-50 text-gray-900 dark:bg-gray-900 transition-colors duration-300 overflow-y-auto">
+        
+        <aside id="app-sidebar" class="fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-gradient-to-b from-white via-blue-50 to-white dark:bg-gradient-to-b dark:from-gray-900 dark:via-slate-800 dark:to-gray-900 dark:border-gray-700 border-gray-200 h-screen transition-all duration-300 ease-in-out z-50 border-r w-[290px] -translate-x-full lg:translate-x-0 shadow-xl dark:shadow-2xl">
+            <div class="py-8 flex justify-start items-center gap-3">
+                <img id="logo-icon" src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Department_of_Transportation_%28Philippines%29.svg/330px-Department_of_Transportation_%28Philippines%29.svg.png" class="w-8 h-8 hidden" alt="Logo">
+                <div id="logo-full" class="flex items-center gap-3">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Department_of_Transportation_%28Philippines%29.svg/330px-Department_of_Transportation_%28Philippines%29.svg.png" class="w-8 h-8" alt="Logo">
+                    <div>
+                        <span class="text-xl font-bold text-gray-900 dark:text-white tracking-tight block">DOTr HRDD</span>
+                        <span class="text-xs text-blue-600 dark:text-blue-400 font-semibold uppercase tracking-wider block">Authorized Signatory</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col overflow-y-auto duration-300 ease-linear custom-scrollbar flex-1">
+                <nav class="mb-6">
+                    <h2 class="mb-4 text-xs uppercase flex leading-[20px] text-gray-400 font-semibold justify-start"><span class="menu-item-text">Menu</span></h2>
+                    <ul class="flex flex-col gap-2">
+                        <li>
+                            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="menu-item nav-item active menu-item-active">
+                                <svg class="w-5 h-5 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+                                <span class="menu-item-text">Dashboard (Pending)</span>
+                                <span id="nav-badge" class="ml-auto bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full hidden">0</span>
+                            </button>
+                        </li>
+                        <li>
+                            <button onclick="switchTab('archive')" id="nav-archive" class="menu-item nav-item menu-item-inactive dark:text-gray-400 dark:hover:bg-white/5 w-full justify-start">
+                                <div class="flex items-center gap-3">
+                                    <svg class="w-5 h-5 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    <span class="menu-item-text">Signed Archive</span>
+                                </div>
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+            <div class="pb-8">
+                <button onclick="location.reload()" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 transition-colors text-sm font-semibold">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                    Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <div id="mobile-backdrop" class="fixed inset-0 z-40 bg-gray-900 bg-opacity-50 hidden lg:hidden transition-opacity" onclick="toggleMobileSidebar()"></div>
+
+        <div id="main-content-wrapper" class="flex-1 flex flex-col transition-all duration-300 ease-in-out lg:ml-[290px] min-h-screen overflow-y-auto">
+            
+            <header class="sticky top-0 flex w-full bg-gradient-to-r from-white via-blue-50 to-white border-b border-gray-200 z-30 h-16 sm:h-20 dark:bg-gradient-to-r dark:from-gray-900 dark:via-slate-800 dark:to-gray-900 dark:border-gray-700 transition-colors duration-300 shadow-md" id="main-header">
+                <div class="flex flex-col items-center justify-between flex-grow lg:flex-row lg:px-6">
+                    <div class="flex items-center justify-between w-full gap-2 px-3 py-3 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">
+                        <button class="items-center justify-center w-10 h-10 text-gray-500 border border-gray-200 rounded-lg lg:flex dark:text-gray-400 lg:h-11 lg:w-11 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" onclick="toggleSidebarLogic()">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                        </button>
+
+                        <div class="hidden lg:block ml-4 relative">
+                            <h2 class="text-xl font-bold font-display text-gray-800 dark:text-white" id="page-title">Signatory Dashboard</h2>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 font-body-modern">Human Resource Development Division</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-end w-full gap-4 px-5 py-4 lg:flex lg:px-0">
+                        <div class="hidden sm:flex flex-col items-end mr-2 border-r border-gray-200 dark:border-gray-700 pr-4">
+                            <span id="header-time" class="text-sm font-bold text-gray-800 dark:text-white font-display"></span>
+                            <span id="header-date" class="text-xs text-gray-500 dark:text-gray-400"></span>
+                        </div>
+
+                        <div class="flex items-center gap-2 sm:gap-3">
+                            <button onclick="loadData()" class="flex items-center justify-center w-11 h-11 text-gray-500 transition-colors bg-white border border-gray-200 rounded-full hover:text-blue-600 hover:bg-blue-50 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-blue-400" title="Refresh Data">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            </button>
+                            <button onclick="toggleTheme()" class="flex items-center justify-center w-11 h-11 text-gray-500 transition-colors bg-white border border-gray-200 rounded-full hover:text-gray-700 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white">
+                                <svg class="hidden dark:block" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                                <svg class="block dark:hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                            </button>
+
+                            <div class="relative ml-1 sm:ml-2">
+                                <button onclick="toggleNotifDropdown(event)" class="relative flex items-center justify-center w-11 h-11 text-gray-500 transition-colors bg-white border border-gray-200 rounded-full hover:text-gray-700 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white" title="Notifications">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                                    <span id="header-notif-badge" class="absolute top-2 right-2 flex h-2.5 w-2.5 rounded-full bg-red-500 hidden animate-pulse border-2 border-white dark:border-gray-900"></span>
+                                </button>
+
+                                <div id="notif-dropdown-menu" class="hidden absolute right-0 mt-3 flex w-80 flex-col rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-800 z-50 overflow-hidden">
+                                    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                                        <span class="font-bold text-gray-800 dark:text-white">Recent Approvals</span>
+                                    </div>
+                                    <div id="header-notif-list" class="flex flex-col max-h-80 overflow-y-auto custom-scrollbar divide-y divide-gray-100 dark:divide-gray-700">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="relative ml-2">
+                                <span class="overflow-hidden rounded-full h-11 w-11 bg-brand-100 text-brand-600 border border-brand-200 flex items-center justify-center font-bold dark:border-brand-800 dark:bg-brand-900/30">
+                                    AS
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main id="content-area" class="p-4 lg:p-8 mx-auto w-full max-w-screen-2xl flex-1 overflow-y-auto custom-scrollbar transition-colors duration-300">
+
+                <div id="tab-dashboard" class="space-y-8 animate-fade-in">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl border border-slate-100 dark:border-gray-700 shadow-lg relative overflow-hidden transition-colors">
+                            <div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-50 dark:bg-blue-900/20 rounded-full blur-2xl"></div>
+                            <p class="text-slate-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider relative z-10">Pending Folders</p>
+                            <h3 class="text-4xl font-display font-bold text-slate-800 dark:text-white mt-2 relative z-10" id="stat-pending">0</h3>
+                            <div class="mt-4 text-xs font-medium text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/30 inline-block px-2 py-1 rounded">Awaiting Signature</div>
+                        </div>
+
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl border border-slate-100 dark:border-gray-700 shadow-lg relative overflow-hidden transition-colors">
+                            <div class="absolute -right-4 -top-4 w-24 h-24 bg-emerald-50 dark:bg-emerald-900/20 rounded-full blur-2xl"></div>
+                            <p class="text-slate-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider relative z-10">Total Memos Signed</p>
+                            <h3 class="text-4xl font-display font-bold text-slate-800 dark:text-white mt-2 relative z-10" id="stat-finalized">0</h3>
+                            <div class="mt-4 text-xs font-medium text-emerald-600 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-900/30 inline-block px-2 py-1 rounded">Blasted to Portal</div>
+                        </div>
+                        
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl border border-slate-100 dark:border-gray-700 shadow-lg relative overflow-hidden transition-colors">
+                            <div class="absolute -right-4 -top-4 w-24 h-24 bg-purple-50 dark:bg-purple-900/20 rounded-full blur-2xl"></div>
+                            <p class="text-slate-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider relative z-10">Total Applications</p>
+                            <h3 class="text-4xl font-display font-bold text-slate-800 dark:text-white mt-2 relative z-10" id="stat-total">0</h3>
+                        </div>
+
+                         <div class="bg-gradient-to-br from-slate-800 to-slate-900 dark:from-gray-800 dark:to-gray-900 dark:border dark:border-gray-700 p-6 rounded-3xl shadow-lg text-white relative overflow-hidden transition-colors">
+                            <p class="text-slate-400 text-xs font-bold uppercase tracking-wider">Signing Rate</p>
+                            <h3 class="text-4xl font-display font-bold mt-2 text-white" id="stat-rate">0%</h3>
+                            <p class="text-xs text-slate-400 mt-4">Based on signed vs total approved</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-slate-100 dark:border-gray-700 overflow-hidden transition-colors">
+                        <div class="p-6 border-b border-slate-100 dark:border-gray-700 flex justify-between items-center">
+                             <div>
+                                <h3 class="font-bold text-slate-800 dark:text-white text-xl">Pending Memo Directives</h3>
+                                <p class="text-sm text-slate-500 mt-1">Grouped by Training Title for Batch Signing</p>
+                             </div>
+                        </div>
+                        <div id="dashboard-pending-folders" class="divide-y divide-slate-100 dark:divide-gray-700">
+                            </div>
+                     </div>
+                </div>
+
+                <div id="tab-archive" class="hidden space-y-6">
+                     <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-slate-100 dark:border-gray-700 overflow-hidden transition-colors">
+                        <div class="p-6 border-b border-slate-100 dark:border-gray-700 flex justify-between items-center">
+                             <div>
+                                <h3 class="font-bold text-slate-800 dark:text-white text-xl">Signed Memos Archive</h3>
+                                <p class="text-sm text-slate-500 mt-1">Released Batches Grouped by Training Title</p>
+                             </div>
+                        </div>
+                        <div id="archive-folders" class="divide-y divide-slate-100 dark:divide-gray-700">
+                             </div>
+                     </div>
+                </div>
+
+<div id="action-modal" class="absolute inset-0 z-[70] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm hidden transition-opacity opacity-0">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-5xl flex flex-col overflow-hidden relative max-h-[90vh]">
+        
+        <div class="bg-slate-800 p-6 flex justify-between items-center text-white shrink-0">
+            <div>
+                <h2 class="text-xl font-bold font-display" id="modal-batch-header">Review & Sign Batch</h2>
+                <p class="text-slate-400 text-sm" id="modal-app-title"></p>
+            </div>
+            <button onclick="closeActionModal()" class="bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto custom-scroll flex flex-col md:flex-row">
+            
+            <div class="w-full md:w-1/2 p-8 border-r border-slate-200">
+                <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 mb-6 shadow-sm">
+                    <h4 class="text-slate-500 font-bold text-xs uppercase tracking-wider mb-4 border-b border-slate-200 pb-2">Batch Nominees</h4>
+                    <div id="modal-batch-list" class="max-h-48 overflow-y-auto custom-scrollbar space-y-2 text-sm text-slate-700 pr-2">
+                        </div>
+                </div>
+
+                <div id="decision-buttons" class="grid grid-cols-2 gap-4 mb-4">
+                    <button onclick="triggerDisapprove()" class="py-4 bg-red-50 text-red-600 border border-red-200 rounded-xl font-bold hover:bg-red-100 transition-colors">Disapprove Batch</button>
+                    <button onclick="showMemoPrep()" class="py-4 bg-slate-900 text-white border border-slate-900 rounded-xl font-bold hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200">Attach Signature</button>
+                </div>
+
+                <div id="memo-prep-form" class="hidden animate-fade-in-up">
+                    <div id="drop-zone" class="border-2 border-dashed border-slate-300 bg-slate-50 rounded-xl p-6 text-center transition-all cursor-pointer hover:bg-white mb-4">
+                        <p class="text-slate-800 font-bold mb-2">Attach Authorized E-Signature</p>
+                        <p class="text-xs text-slate-500 mb-3">Signature will be applied to all memos in this batch.</p>
+                        <input type="file" id="sig-input" class="hidden" accept="image/*">
+                        <div id="sig-preview-container" class="hidden flex justify-center mb-4">
+                            <img id="sig-preview" class="h-16 mix-blend-multiply" src="">
+                        </div>
+                        <button onclick="document.getElementById('sig-input').click()" class="text-xs text-blue-600 underline cursor-pointer">Click to upload image</button>
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <button onclick="hideMemoPrep()" class="flex-1 py-3 text-slate-500 font-semibold hover:text-slate-700">Cancel</button>
+                        <button id="confirm-approve-btn" onclick="confirmBatchApproval()" disabled class="flex-[2] py-3 bg-slate-300 text-white rounded-xl font-bold cursor-not-allowed transition-colors shadow-lg">Sign & Blast Memos</button>
+                    </div>
+                </div>
+
+                <div id="disapprove-section" class="hidden mt-4 animate-fade-in-up bg-red-50 p-5 rounded-xl border border-red-100 shadow-inner">
+                    <h4 class="text-red-800 font-bold text-sm mb-3">Reason for Batch Disapproval</h4>
+                    <textarea id="disapprove-custom" rows="3" class="w-full p-2.5 border border-red-200 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-red-500 focus:outline-none mb-3" placeholder="Specify reason... (Will be sent to all users in batch)"></textarea>
+                    
+                    <div class="flex gap-2">
+                        <button onclick="hideDisapproveZone()" class="flex-1 py-2 text-slate-500 font-semibold hover:text-slate-700 bg-white border border-slate-200 rounded-lg">Cancel</button>
+                        <button onclick="confirmBatchDisapproval()" class="flex-1 py-2 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-200">Confirm Disapproval</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="w-full md:w-1/2 p-8 bg-slate-50/50">
+                <h3 class="text-lg font-bold text-slate-800 mb-4 uppercase tracking-wider border-b border-slate-200 pb-2">Training Information</h3>
+                
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="text-sm font-semibold text-blue-600 mb-1">Description/Objectives</h4>
+                        <p id="modal-desc" class="text-slate-600 text-sm leading-relaxed text-justify"></p>
+                    </div>
+                    
+                    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                        <h4 class="text-sm font-semibold text-purple-600 mb-3 uppercase">Key Details</h4>
+                        <ul class="space-y-3 text-sm text-slate-700">
+                            <li class="flex gap-2"><span class="font-bold min-w-[100px] text-slate-900">Duration:</span> <span id="modal-duration"></span></li>
+                            <li class="flex gap-2"><span class="font-bold min-w-[100px] text-slate-900">Level:</span> <span id="modal-level"></span></li>
+                            <li class="flex gap-2"><span class="font-bold min-w-[100px] text-slate-900">Competency:</span> <span id="modal-competencies"></span></li>
+                            <li class="flex gap-2"><span class="font-bold min-w-[100px] text-slate-900">Target:</span> <span id="modal-target"></span></li>
+                            <li class="flex gap-2"><span class="font-bold min-w-[100px] text-slate-900">Cost:</span> <span id="modal-cost" class="font-bold text-emerald-600"></span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+            </main>
+        </div>
+    </div>
+</div>
+
+    <script>
+        const DB_KEY = 'DOTr_HRDD_DB';
+        let currentBatchTitle = null;
+        let currentBatchApps = [];
+        let uploadedSignatorySig = null;
+
+        const allTrainings = [
+            {
+                title: 'Human-Centered Leadership: Redefining Success with Well-Being in Mind',
+                duration: '2 days',
+                level: 'All Employees',
+                description: 'This course empowers leaders to embrace a people-first approach to leadership by integrating well-being, empathy, and purpose into their management style. Participants will explore how human-centered leadership fosters trust, resilience, and sustainable performance.',
+                details: { competencies: 'Crafting and Nurturing High-Performing Organizations', target: 'All Employees', cost: 'Sponsored', mode: 'Virtual Training' }
+            },
+            { title: 'Team Building & Collaboration', duration: '1 day', level: 'All Levels', description: 'Strengthen team dynamics and enhance collaborative work environments through practical exercises and shared problem solving.', details: { competencies: 'Teamwork', target: 'All Levels', cost: 'Internal', mode: 'In-Person' } },
+            { title: 'Effective Communication Skills', duration: '3 days', level: 'Beginner', description: 'Master professional communication techniques for workplace success, including active listening and clear writing.', details: { competencies: 'Communication', target: 'Beginner', cost: 'Internal', mode: 'In-Person' } },
+            { title: 'Industry Conference 2025', duration: '3 days', level: 'Advanced', description: 'Network with industry leaders and gain insights into emerging trends impacting the transportation sector.', details: { competencies: 'Technical', target: 'Senior Staff', cost: 'Php 15,000', mode: 'Conference' } },
+            { title: "Service Excellence: A Guide to RA 11032 Citizen's Charter", duration: 'Self-Paced', level: 'All Levels', description: 'Master the protocols of the Ease of Doing Business Act to ensure efficient and transparent government service delivery.', details: { competencies: 'Public Service', target: 'All Levels', cost: 'Free', mode: 'Online' } },
+            { title: "The Influence of Digitalization on Psychological Well-Being", duration: 'Self-Paced', level: 'All Levels', description: 'Explore the impact of digital technology on mental health and learn strategies for maintaining digital well-being.', details: { competencies: 'Digital Wellness', target: 'All Levels', cost: 'Free', mode: 'Online' } }
+        ];
+
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const u = document.getElementById('admin-id').value;
+            const p = document.getElementById('admin-pass').value;
+            
+            if(u === 'cao_signatory' && p === 'dotr123') {
+                document.getElementById('super-login').classList.add('hidden');
+                document.getElementById('super-dashboard').classList.remove('hidden');
+                loadData();
+            } else {
+                alert("Invalid Signatory Credentials");
+            }
+        });
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('nav-'+tabName).classList.add('active');
+
+            ['dashboard', 'archive'].forEach(t => {
+                document.getElementById('tab-'+t).classList.add('hidden');
+            });
+            document.getElementById('tab-'+tabName).classList.remove('hidden');
+
+            const titles = {
+                'dashboard': 'Signatory Dashboard',
+                'archive': 'Signed Memos Archive'
+            };
+            document.getElementById('page-title').textContent = titles[tabName];
+            loadData();
+        }
+
+        function getDB() {
+            return JSON.parse(localStorage.getItem(DB_KEY) || '{"applications":[]}');
+        }
+
+        function saveDB(data) {
+            localStorage.setItem(DB_KEY, JSON.stringify(data));
+        }
+
+        function toggleFolder(folderId) {
+            const content = document.getElementById(folderId);
+            const icon = document.getElementById(folderId + '-icon');
+            if(content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                content.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        function loadData() {
+            const db = getDB();
+            const allApps = db.applications || [];
+            
+            // Exclude JAF records
+            const nominations = allApps.filter(a => a.formType !== 'jaf');
+
+            // Pending folders (Treat Pending Signatory and Finalized as ready for Signatory)
+            const pendingApps = nominations.filter(a => a.status === 'Pending Signatory' || a.status === 'Finalized'); 
+            const signedApps = nominations.filter(a => a.status === 'Signed');
+
+            // Stats
+            const pendingTitles = [...new Set(pendingApps.map(a => a.title))];
+            document.getElementById('stat-pending').textContent = pendingTitles.length;
+            document.getElementById('stat-finalized').textContent = signedApps.length;
+            document.getElementById('stat-total').textContent = nominations.length;
+
+            const rate = nominations.length > 0 ? Math.round((signedApps.length / nominations.length) * 100) : 0;
+            document.getElementById('stat-rate').textContent = rate + '%';
+
+            const badge = document.getElementById('nav-badge');
+            if(pendingTitles.length > 0) {
+                badge.textContent = pendingTitles.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+
+            // Populate Dashboards
+            populateFolders('dashboard-pending-folders', pendingApps, true);
+            populateFolders('archive-folders', signedApps, false);
+        }
+
+        function populateFolders(containerId, appsArray, isPending) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            const groups = {};
+            [...appsArray].reverse().forEach(app => {
+                const folder = app.title || 'Uncategorized Trainings';
+                if(!groups[folder]) groups[folder] = [];
+                groups[folder].push(app);
+            });
+
+            if (Object.keys(groups).length === 0) {
+                container.innerHTML = `<div class="p-8 text-center text-slate-400 dark:text-gray-500">No ${isPending ? 'pending' : 'archived'} records found.</div>`;
+                return;
+            }
+
+            let folderIndex = 0;
+            for(const [title, items] of Object.entries(groups)) {
+                folderIndex++;
+                const folderId = `folder-${isPending?'pend':'arch'}-${folderIndex}`;
+                
+                let badgeHTML = '';
+                let actionBtnHTML = '';
+
+                if (isPending) {
+                    badgeHTML = `<span class="px-2 py-0.5 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 rounded text-xs font-bold border border-amber-200 dark:border-amber-800 ml-3 shadow-sm">PENDING</span>`;
+                    
+                    let safeTitle = title.replace(/'/g, "\\'");
+                    actionBtnHTML = `
+                        <button onclick="openBatchModal('${safeTitle}')" class="mt-4 w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-xl text-sm font-bold hover:from-blue-700 hover:to-blue-800 transition-colors shadow-lg flex justify-center items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                            Review & Sign Batch
+                        </button>
+                    `;
+                }
+
+                const folderHeader = document.createElement('div');
+                folderHeader.innerHTML = `
+                    <button onclick="toggleFolder('${folderId}')" class="w-full flex justify-between items-center p-5 bg-slate-50 hover:bg-slate-100 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors text-left focus:outline-none border-b border-slate-100 dark:border-gray-700">
+                        <div class="flex items-center gap-3">
+                            <svg class="w-6 h-6 ${isPending ? 'text-amber-500' : 'text-emerald-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                            <div class="flex items-center">
+                                <h4 class="font-bold text-slate-800 dark:text-gray-200 text-lg">${title}</h4>
+                                ${badgeHTML}
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="text-xs font-bold text-slate-500 dark:text-gray-400 bg-white dark:bg-gray-900 px-3 py-1 rounded-full border border-slate-200 dark:border-gray-700 shadow-sm">${items.length} Nominee(s)</span>
+                            <svg id="${folderId}-icon" class="w-5 h-5 text-slate-400 transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </div>
+                    </button>
+                    <div id="${folderId}" class="hidden folder-content overflow-x-auto bg-white dark:bg-gray-800 p-2">
+                        <table class="w-full text-left text-sm text-slate-600 dark:text-gray-300 mb-2">
+                            <thead class="bg-slate-50 dark:bg-gray-700/30 text-xs uppercase font-bold text-slate-400 dark:text-gray-500 border-b border-slate-200 dark:border-gray-700">
+                                <tr>
+                                    <th class="p-3 pl-5">ID</th>
+                                    <th class="p-3">Employee</th>
+                                    <th class="p-3">Office</th>
+                                    <th class="p-3 text-center">Actions</th> 
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-gray-700">
+                                ${items.map(app => {
+                                    let safeId = String(app.id).replace(/'/g, "\\'");
+                                    let memoBtn = isPending 
+                                        ? `<button onclick="downloadNominationForm('${safeId}', event)" class="text-xs font-bold text-purple-600 dark:text-purple-400 hover:underline">View Form</button>` 
+                                        : `<button onclick="viewMemoFromList('${safeId}')" class="text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline">View Memo</button>`;
+                                    return `
+                                    <tr class="hover:bg-slate-50 dark:hover:bg-gray-700/30 transition-colors">
+                                        <td class="p-3 pl-5 text-xs font-mono text-slate-400 dark:text-gray-500">#${(app.id||'0').toString().slice(-4)}</td>
+                                        <td class="p-3 font-medium text-slate-700 dark:text-gray-200">${app.name}</td>
+                                        <td class="p-3 text-xs">${app.office}</td>
+                                        <td class="p-3 text-center">${memoBtn}</td>
+                                    </tr>
+                                    `
+                                }).join('')}
+                            </tbody>
+                        </table>
+                        <div class="px-3 pb-3">
+                            ${actionBtnHTML}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(folderHeader);
+            }
+        }
+
+        // --- BATCH ACTION MODAL LOGIC ---
+        function openBatchModal(title) {
+            currentBatchTitle = title;
+            const db = getDB();
+            
+            currentBatchApps = db.applications.filter(a => a.title === title && (a.status === 'Pending Signatory' || a.status === 'Finalized'));
+            
+            if(currentBatchApps.length === 0) return;
+
+            document.getElementById('modal-app-title').textContent = title;
+
+            // Populate batch list with inline "View Form" buttons
+            const batchListEl = document.getElementById('modal-batch-list');
+            batchListEl.innerHTML = currentBatchApps.map((app, index) => {
+                let safeId = String(app.id).replace(/'/g, "\\'");
+                return `
+                <div class="flex justify-between items-center p-3 bg-white border border-slate-200 rounded-lg shadow-sm">
+                    <div>
+                        <span class="font-bold text-slate-800 block">${index + 1}. ${app.name}</span>
+                        <span class="text-xs text-slate-500">${app.position} | ${app.office}</span>
+                    </div>
+                    <button onclick="downloadNominationForm('${safeId}', event)" class="text-xs text-blue-600 hover:underline px-3 py-1 border border-blue-200 rounded hover:bg-blue-50 transition-colors">View Form</button>
+                </div>
+                `;
+            }).join('');
+
+            // Training Info
+            const trainingInfo = allTrainings.find(t => t.title === title) || {
+                duration: 'N/A',
+                level: 'N/A',
+                description: 'No detailed description available in database.',
+                details: { competencies: 'N/A', target: 'N/A', cost: 'N/A' }
+            };
+
+            document.getElementById('modal-desc').textContent = trainingInfo.description;
+            document.getElementById('modal-duration').textContent = trainingInfo.duration;
+            document.getElementById('modal-level').textContent = trainingInfo.level;
+            document.getElementById('modal-competencies').textContent = trainingInfo.details.competencies || 'N/A';
+            document.getElementById('modal-target').textContent = trainingInfo.details.target || 'N/A';
+            document.getElementById('modal-cost').textContent = trainingInfo.details.cost || 'N/A';
+
+            // Reset States
+            uploadedSignatorySig = null;
+            document.getElementById('sig-preview').src = "";
+            document.getElementById('sig-preview-container').classList.add('hidden');
+            
+            document.getElementById('decision-buttons').classList.remove('hidden');
+            document.getElementById('memo-prep-form').classList.add('hidden');
+            document.getElementById('disapprove-section').classList.add('hidden');
+            document.getElementById('disapprove-custom').value = "";
+
+            const confirmBtn = document.getElementById('confirm-approve-btn');
+            confirmBtn.disabled = true;
+            confirmBtn.classList.replace('bg-slate-900', 'bg-slate-300');
+            confirmBtn.classList.remove('hover:bg-slate-800');
+
+            document.getElementById('action-modal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('action-modal').classList.remove('opacity-0'), 10);
+        }
+
+        function closeActionModal() {
+            const modal = document.getElementById('action-modal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                currentBatchTitle = null;
+                currentBatchApps = [];
+            }, 300);
+        }
+
+        // Generate Nomination Form for Viewing within Batch Modal
+        function downloadNominationForm(appId, event) {
+            const db = getDB();
+            const searchId = String(appId);
+            const data = db.applications.find(a => String(a.id) === searchId);
+
+            if (!data) return;
+
+            document.getElementById('pdf-title').textContent = data.title;
+            document.getElementById('pdf-date-course').textContent = data.date_course;
+            document.getElementById('pdf-date-filing').textContent = data.date_filing;
+            document.getElementById('pdf-venue').textContent = data.venue;
+
+            document.getElementById('pdf-comp-core').textContent = data.competency === 'core' ? 'X' : '';
+            document.getElementById('pdf-comp-lead').textContent = data.competency === 'leadership' ? 'X' : '';
+            document.getElementById('pdf-comp-func').textContent = data.competency === 'functional' ? 'X' : '';
+
+            document.getElementById('pdf-name').textContent = data.name;
+            document.getElementById('pdf-id').textContent = data.id_number || "N/A";
+            document.getElementById('pdf-email').textContent = data.email || "N/A";
+            document.getElementById('pdf-position').textContent = data.position;
+            document.getElementById('pdf-office').textContent = data.office;
+            document.getElementById('pdf-supervisor').textContent = data.supervisor;
+            
+            document.getElementById('pdf-justification').textContent = data.justification || "";
+
+            const supervisorSig = document.getElementById('pdf-admin-signature-preview');
+            const userSig = document.getElementById('pdf-user-signature-preview');
+
+            if (data.admin_signature) {
+                supervisorSig.src = data.admin_signature;
+                supervisorSig.style.display = 'block';
+            } else {
+                supervisorSig.style.display = 'none';
+            }
+
+            if (data.user_signature) {
+                userSig.src = data.user_signature;
+                userSig.style.display = 'block';
+            } else {
+                userSig.style.display = 'none';
+            }
+
+            const element = document.getElementById('pdf-content'); 
+            const opt = {
+                margin: 0, 
+                filename: `Nomination_${data.name.replace(/\s+/g,'_')}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, logging: false },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+            
+            const btn = event ? event.currentTarget : null;
+            let originalText = "";
+            if(btn) {
+                originalText = btn.innerHTML;
+                btn.innerHTML = `Loading...`;
+            }
+
+            html2pdf().set(opt).from(element).save().then(function() {
+                if(btn) btn.innerHTML = originalText;
+            }).catch(err => {
+                console.error(err);
+                if(btn) btn.innerHTML = originalText;
+            });
+        }
+        
+        function viewMemoFromList(id) {
+            const db = getDB();
+            const searchId = String(id);
+            const app = db.applications.find(a => String(a.id) === searchId);
+            
+            if(app && app.memo_pdf) {
+                const pdfWindow = window.open("");
+                if (pdfWindow) {
+                    pdfWindow.document.write(
+                        "<iframe width='100%' height='100%' style='border:none; margin:0; padding:0;' src='" + app.memo_pdf + "'></iframe>"
+                    );
+                } else {
+                    const link = document.createElement('a');
+                    link.href = app.memo_pdf;
+                    link.download = `Memo_${app.name.replace(/\s+/g,'_')}.pdf`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+            } else {
+                alert("Memo PDF not found.");
+            }
+        }
+
+        // --- SIGNATURE HANDLING ---
+        function showMemoPrep() {
+            document.getElementById('decision-buttons').classList.add('hidden');
+            document.getElementById('memo-prep-form').classList.remove('hidden');
+        }
+
+        function hideMemoPrep() {
+            document.getElementById('memo-prep-form').classList.add('hidden');
+            document.getElementById('decision-buttons').classList.remove('hidden');
+        }
+
+        const dropZone = document.getElementById('drop-zone');
+        const sigInput = document.getElementById('sig-input');
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('bg-blue-100', 'border-blue-500');
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('bg-blue-100', 'border-blue-500');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('bg-blue-100', 'border-blue-500');
+            const file = e.dataTransfer.files[0];
+            handleSignatureFile(file);
+        });
+
+        sigInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            handleSignatureFile(file);
+        });
+
+        function handleSignatureFile(file) {
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    uploadedSignatorySig = e.target.result;
+                    document.getElementById('sig-preview').src = uploadedSignatorySig;
+                    document.getElementById('sig-preview-container').classList.remove('hidden');
+                    
+                    const btn = document.getElementById('confirm-approve-btn');
+                    btn.disabled = false;
+                    btn.classList.replace('bg-slate-300', 'bg-slate-900');
+                    btn.classList.add('hover:bg-slate-800');
+                    btn.classList.remove('cursor-not-allowed');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                alert("Please upload a valid image file.");
+            }
+        }
+
+        function formatTime(timeString) {
+            if (!timeString) return "__________";
+            const [hours, minutes] = timeString.split(':');
+            const h = parseInt(hours, 10);
+            const m = parseInt(minutes, 10);
+            const suffix = h >= 12 ? 'PM' : 'AM';
+            const adjustedH = h % 12 || 12;
+            return `${adjustedH}:${m.toString().padStart(2, '0')} ${suffix}`;
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return "__________";
+            const date = new Date(dateString);
+            const day = date.getDate().toString().padStart(2, '0');
+            const month = date.toLocaleString('en-US', { month: 'long' });
+            const year = date.getFullYear();
+            return `${day} ${month} ${year}`;
+        }
+
+        // --- BATCH APPROVAL EXECUTION ---
+        async function confirmBatchApproval() {
+            if(!uploadedSignatorySig || currentBatchApps.length === 0) return;
+            
+            const btn = document.getElementById('confirm-approve-btn');
+            btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Processing Batch...`;
+            btn.disabled = true;
+
+            try {
+                const db = getDB();
+                const trainingInfo = allTrainings.find(t => t.title === currentBatchTitle) || { description: "Training objectives are as outlined in the course syllabus." };
+
+                for (let i = 0; i < currentBatchApps.length; i++) {
+                    btn.innerHTML = `Signing ${i+1} of ${currentBatchApps.length}...`;
+                    
+                    let appData = currentBatchApps[i];
+                    let dbApp = db.applications.find(a => a.id === appData.id);
+                    if(!dbApp) continue;
+
+                    // 1. Prepare Memo Template with App Data (Placeholder logic if Super Admin missed it)
+                    document.getElementById('memo-subject-training').textContent = dbApp.title.toUpperCase();
+                    document.getElementById('memo-date-field').textContent = formatDate(dbApp.memo_date || new Date().toISOString());
+                    document.getElementById('memo-body-title').textContent = dbApp.title;
+                    document.getElementById('memo-body-date').textContent = dbApp.date_course; 
+                    document.getElementById('memo-time-start').textContent = formatTime(dbApp.memo_time_in);
+                    document.getElementById('memo-time-end').textContent = formatTime(dbApp.memo_time_out);
+                    document.getElementById('memo-provider').textContent = dbApp.memo_provider || 'the Training Provider';
+                    document.getElementById('memo-mode').textContent = dbApp.memo_mode || 'Learning Program';
+
+                    document.getElementById('memo-emp-name').textContent = dbApp.name;
+                    document.getElementById('memo-emp-pos').textContent = dbApp.position;
+                    document.getElementById('memo-emp-office').textContent = dbApp.office;
+                    document.getElementById('memo-objectives').textContent = trainingInfo.description;
+
+                    const sigImg = document.getElementById('memo-signature-preview');
+                    sigImg.src = uploadedSignatorySig;
+                    sigImg.style.display = 'block';
+
+                    // 2. Render to Data URI string
+                    const element = document.getElementById('memo-content');
+                    const opt = {
+                        margin: 0.3,
+                        filename: `Memo_${dbApp.name.replace(/\s+/g, '_')}.pdf`,
+                        image: { type: 'jpeg', quality: 0.98 },
+                        html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+                        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
+                        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+                    };
+
+                    const pdfDataUri = await html2pdf().set(opt).from(element).output('datauristring');
+                    
+                    // 3. Update Status and Send Blast
+                    dbApp.status = 'Signed'; 
+                    dbApp.read = false; 
+                    dbApp.memo_pdf = pdfDataUri;
+
+                    if(!dbApp.messages) dbApp.messages = [];
+                    const msg = `
+                        <div style="border-left: 4px solid #0f172a; padding-left: 12px; font-family: 'Plus Jakarta Sans', sans-serif;">
+                            <strong style="color: #0f172a; display: block; margin-bottom: 5px;">OFFICIAL MEMO DIRECTIVE</strong>
+                            Congratulations! Your nomination for <em>${dbApp.title}</em> has been officially approved and signed.<br><br>
+                            Attached is the Memorandum Directive for your attendance.<br>
+                            <button onclick="viewMemoFromList('${dbApp.id}')" style="margin-top: 10px; background-color: #0f172a; color: white; padding: 8px 16px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer;">
+                                View Signed Memo Directive
+                            </button>
+                        </div>
+                    `;
+                    dbApp.messages.push({
+                        sender: 'Admin',
+                        text: msg,
+                        timestamp: new Date().toISOString(),
+                        read: false
+                    });
+                }
+
+                saveDB(db);
+                alert("Batch Processed! Memos signed and blasted to all users.");
+                closeActionModal();
+                loadData();
+
+            } catch (error) {
+                console.error(error);
+                alert("Error generating Batch: " + error.message);
+                btn.textContent = "Sign & Blast Memos";
+                btn.disabled = false;
+            }
+        }
+
+        // --- DISAPPROVAL WORKFLOW ---
+        function triggerDisapprove() {
+            document.getElementById('decision-buttons').classList.add('hidden');
+            document.getElementById('disapprove-section').classList.remove('hidden');
+        }
+
+        function hideDisapproveZone() {
+            document.getElementById('disapprove-section').classList.add('hidden');
+            document.getElementById('decision-buttons').classList.remove('hidden');
+        }
+
+        function confirmBatchDisapproval() {
+            const customArea = document.getElementById('disapprove-custom');
+            let reason = customArea.value.trim();
+
+            if (!reason) { alert("Please provide a reason for the mass disapproval."); return; }
+            if (!confirm(`Are you sure you want to disapprove the ENTIRE batch of ${currentBatchApps.length} applications?`)) return;
+
+            const db = getDB();
+            
+            for (let appData of currentBatchApps) {
+                let dbApp = db.applications.find(a => a.id === appData.id);
+                if(!dbApp) continue;
+
+                dbApp.status = 'Rejected';
+                dbApp.read = false;
+
+                const msg = `
+                    <div style="font-family: 'Times New Roman', serif; color: #1e293b;">
+                        <strong>SUBJECT: SIGNATORY DISAPPROVAL NOTICE</strong><br><br>
+                        Dear <strong>${dbApp.name}</strong>,<br><br>
+                        We regret to inform you that the batch application for <strong>"${dbApp.title}"</strong> has been <span style="color: #dc2626; font-weight: bold;">DISAPPROVED</span> by the Signatory.<br><br>
+                        Reason:<br>
+                        <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 10px; margin: 10px 0; font-style: italic; color: #7f1d1d;">
+                            "${reason}"
+                        </div>
+                    </div>
+                `;
+
+                if(!dbApp.messages) dbApp.messages = [];
+                dbApp.messages.push({ sender: 'Admin', text: msg, read: false, timestamp: new Date().toISOString() });
+            }
+
+            saveDB(db);
+            alert("Batch Disapproved.");
+            closeActionModal();
+            loadData();
+        }
+
+        // Run Init
+        loadData();
+
+        // --- Layout Toggles ---
+        let isSidebarExpanded = true;
+        let isMobileOpen = false;
+
+        function toggleSidebarLogic() {
+            if (window.innerWidth >= 1024) {
+                isSidebarExpanded = !isSidebarExpanded;
+                updateSidebarClasses();
+            } else {
+                toggleMobileSidebar();
+            }
+        }
+
+        function toggleMobileSidebar() {
+            isMobileOpen = !isMobileOpen;
+            updateSidebarClasses();
+            const backdrop = document.getElementById('mobile-backdrop');
+            if(isMobileOpen) backdrop.classList.remove('hidden');
+            else backdrop.classList.add('hidden');
+        }
+
+        function updateSidebarClasses() {
+            const sidebar = document.getElementById('app-sidebar');
+            const mainContent = document.getElementById('main-content-wrapper');
+            const logoFull = document.getElementById('logo-full');
+            const logoIcon = document.getElementById('logo-icon');
+            const textElements = document.querySelectorAll('.menu-item-text');
+
+            if(isMobileOpen) {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.add('translate-x-0');
+            } else if(window.innerWidth < 1024) {
+                sidebar.classList.add('-translate-x-full');
+                sidebar.classList.remove('translate-x-0');
+            }
+
+            if (window.innerWidth >= 1024) {
+                if(isSidebarExpanded) {
+                    sidebar.classList.remove('w-[90px]');
+                    sidebar.classList.add('w-[290px]');
+                    mainContent.classList.remove('lg:ml-[90px]');
+                    mainContent.classList.add('lg:ml-[290px]');
+                    logoFull.classList.remove('hidden');
+                    logoIcon.classList.add('hidden');
+                    textElements.forEach(el => el.classList.remove('hidden'));
+                } else {
+                    sidebar.classList.remove('w-[290px]');
+                    sidebar.classList.add('w-[90px]');
+                    mainContent.classList.remove('lg:ml-[290px]');
+                    mainContent.classList.add('lg:ml-[90px]');
+                    logoFull.classList.add('hidden');
+                    logoIcon.classList.remove('hidden');
+                    textElements.forEach(el => el.classList.add('hidden'));
+                }
+            }
+        }
+
+        function toggleTheme() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('color-theme', 'light');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('color-theme', 'dark');
+            }
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            const dateStr = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+            const timeEl = document.getElementById('header-time');
+            const dateEl = document.getElementById('header-date');
+            if (timeEl) timeEl.textContent = timeStr;
+            if (dateEl) dateEl.textContent = dateStr;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // --- Notifications Logic ---
+        function toggleNotifDropdown(e) {
+            if (e) e.stopPropagation();
+            const notifMenu = document.getElementById('notif-dropdown-menu');
+            if (!notifMenu) return;
+
+            if (notifMenu.classList.contains('hidden')) {
+                notifMenu.classList.remove('hidden');
+                notifMenu.classList.add('dropdown-open');
+                checkAdminNotifications();
+            } else {
+                notifMenu.classList.add('hidden');
+                notifMenu.classList.remove('dropdown-open');
+            }
+        }
+
+        document.addEventListener('click', (e) => {
+            const notifMenu = document.getElementById('notif-dropdown-menu');
+            if(notifMenu && !notifMenu.contains(e.target) && !e.target.closest('button[onclick="toggleNotifDropdown(event)"]')) {
+                notifMenu.classList.add('hidden');
+                notifMenu.classList.remove('dropdown-open');
+            }
+        });
+
+        function checkAdminNotifications() {
+            const db = getDB();
+            
+            const pendingApps = (db.applications || []).filter(a => a.status === 'Approved' || a.status === 'Supervisor Approved').map(app => ({
+                id: app.id,
+                title: 'Needs Signature',
+                message: `Memo for ${app.name} (${app.title}) is ready for review.`,
+                date: app.date_submitted || new Date().toISOString().split('T')[0],
+                isUnread: app.admin_read !== true,
+                type: 'nomination'
+            }));
+
+            const allNotifs = pendingApps.sort((a, b) => b.id - a.id);
+
+            const unreadCount = allNotifs.filter(n => n.isUnread).length;
+            const badge = document.getElementById('header-notif-badge');
+            
+            if (badge) {
+                if (unreadCount > 0) badge.classList.remove('hidden');
+                else badge.classList.add('hidden');
+            }
+
+            const listContainer = document.getElementById('header-notif-list');
+            if (!listContainer) return; 
+
+            if (allNotifs.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="p-8 text-center flex flex-col items-center justify-center text-slate-400 dark:text-gray-500">
+                        <svg class="w-8 h-8 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                        <p class="text-sm">No items pending signature.</p>
+                    </div>`;
+            } else {
+                listContainer.innerHTML = '';
+                allNotifs.forEach(notif => {
+                    const bgClass = notif.isUnread ? 'bg-blue-50/50 dark:bg-gray-700/80' : 'bg-white dark:bg-gray-800';
+                    const icon = '<svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>';
+
+                    const item = document.createElement('div');
+                    item.className = `p-4 hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-colors flex items-start gap-3 cursor-pointer border-l-4 ${notif.isUnread ? 'border-blue-500' : 'border-transparent'} ${bgClass}`;
+                    item.onclick = () => handleNotifClick(notif);
+                    
+                    item.innerHTML = `
+                        <div class="p-2 rounded-xl bg-slate-100 dark:bg-gray-900 flex-shrink-0 shadow-sm border border-slate-200 dark:border-gray-700">
+                            ${icon}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-start">
+                                <h4 class="font-bold text-slate-800 dark:text-gray-200 text-sm truncate pr-2">
+                                    ${notif.title}
+                                </h4>
+                                ${notif.isUnread ? '<span class="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-1"></span>' : ''}
+                            </div>
+                            <p class="text-xs text-slate-500 dark:text-gray-400 mt-0.5 line-clamp-2">
+                                ${notif.message}
+                            </p>
+                            <span class="text-[10px] font-medium text-slate-400 dark:text-gray-500 block mt-1">${notif.date}</span>
+                        </div>
+                    `;
+                    listContainer.appendChild(item);
+                });
+            }
+        }
+
+        function handleNotifClick(notif) {
+            const db = getDB();
+            if (notif.type === 'nomination') {
+                const searchId = String(notif.id);
+                const app = db.applications.find(a => String(a.id) === searchId);
+                if(app) {
+                    app.admin_read = true;
+                    switchTab('dashboard');
+                    setTimeout(() => openBatchModal(app.title), 200);
+                }
+            }
+            localStorage.setItem(DB_KEY, JSON.stringify(db));
+            checkAdminNotifications();
+            document.getElementById('notif-dropdown-menu').classList.add('hidden');
+        }
+
+        setTimeout(checkAdminNotifications, 500);
+        setInterval(checkAdminNotifications, 5000);
+    </script>
+</body>
+</html>
