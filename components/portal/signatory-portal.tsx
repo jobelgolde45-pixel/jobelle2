@@ -148,7 +148,10 @@ export function SignatoryPortal() {
   const handleLogin = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (username === AUTH_USERNAME && password === AUTH_PASSWORD) {
+    const trimmedUsername = username.trim().toLowerCase();
+    const trimmedPassword = password.trim();
+
+    if (trimmedUsername === AUTH_USERNAME && trimmedPassword === AUTH_PASSWORD) {
       setIsAuthenticated(true);
       setLoginError("");
       setPassword("");
