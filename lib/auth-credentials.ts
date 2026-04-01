@@ -9,7 +9,7 @@ export interface AuthCredentials {
 
 export const CREDENTIALS: AuthCredentials[] = [
   { username: "cao_signatory", password: "dotr123", role: "signatory", name: "Mary Grace L. Escoto" },
-  { username: "employee", password: "password123", role: "employee", name: "Juan Dela Cruz" },
+  { username: "user", password: "password123", role: "employee", name: "Juan Dela Cruz" },
   { username: "supervisor", password: "password123", role: "employee", name: "Josefa B. Neri" },
   { username: "admin", password: "password123", role: "signatory", name: "System Admin" },
 ];

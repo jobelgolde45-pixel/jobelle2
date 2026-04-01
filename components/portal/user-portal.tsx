@@ -19,6 +19,7 @@ import {
   TRAINING_COLORS,
   writeUserDatabase,
 } from "@/lib/user-portal-data";
+import { SelfPacedPortal } from "@/components/portal/self-paced-portal";
 
 const THEME_KEY = "user-portal-theme";
 
@@ -47,6 +48,7 @@ export function UserPortal({ username, onSignOut }: UserPortalProps) {
   const [activeTrainingIndex, setActiveTrainingIndex] = useState(0);
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>("trainings");
   const [uploadedSignature, setUploadedSignature] = useState<string | null>(null);
+  const [showSelfPacedPortal, setShowSelfPacedPortal] = useState(false);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", isDark);
@@ -218,7 +220,7 @@ export function UserPortal({ username, onSignOut }: UserPortalProps) {
   const hideHeader = activeSection === "trainings-interventions" || activeSection === "csc-main";
 
   return (
-    <div className="min-h-screen xl:flex w-full bg-gray-50 text-gray-900 dark:bg-gray-900">
+    <div className={`min-h-screen xl:flex w-full bg-gray-50 text-gray-900 dark:bg-gray-900 ${showSelfPacedPortal ? "hidden" : ""}`}>
       <aside
         className={`fixed mt-16 lg:mt-0 top-0 px-5 left-0 bg-gradient-to-b from-white via-blue-50 to-white dark:bg-gradient-to-b dark:from-gray-900 dark:via-slate-800 dark:to-gray-900 dark:border-gray-700 border-gray-200 h-screen transition-all duration-300 ease-in-out z-50 border-r ${
           isSidebarExpanded ? "w-[290px]" : "w-[90px]"
@@ -1062,12 +1064,19 @@ export function UserPortal({ username, onSignOut }: UserPortalProps) {
                   <p className="text-xl text-gray-300">Training Programs</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {Object.entries(TRAINING_CATALOG).map(([type, _]) => {
+                  {Object.entries(TRAINING_CATALOG).map(([type]) => {
                     const colors = TRAINING_COLORS[type as keyof typeof TRAINING_COLORS];
                     return (
                       <button
                         key={type}
-                        onClick={() => handleSelectTrainingType(type)}
+                        onClick={() => {
+                          if (type === "self-paced") {
+                            setExpandedTrainings(null);
+                            setShowSelfPacedPortal(true);
+                          } else {
+                            handleSelectTrainingType(type);
+                          }
+                        }}
                         className="relative rounded-2xl p-8 text-left transition-all duration-500 hover:scale-105 hover:-translate-y-2"
                         style={{ background: colors.gradient, boxShadow: "0 20px 40px -12px rgba(0,0,0,0.5)" }}
                       >
@@ -1162,6 +1171,10 @@ export function UserPortal({ username, onSignOut }: UserPortalProps) {
             )}
           </div>
         </div>
+      )}
+
+      {showSelfPacedPortal && (
+        <SelfPacedPortal onBack={() => setShowSelfPacedPortal(false)} />
       )}
     </div>
   );
