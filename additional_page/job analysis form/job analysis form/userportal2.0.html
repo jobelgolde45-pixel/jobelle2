@@ -1,0 +1,1523 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOTr-HRDD Learning Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: { brand: { 100: '#dbeafe', 300: '#93c5fd', 500: '#3b82f6', 600: '#2563eb', 800: '#1e40af' } }
+                }
+            }
+        }
+        
+        // --- DARK MODE INIT ---
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+
+    <style>
+        /* Base Dashboard Styles */
+        body { box-sizing: border-box; font-family: 'Inter', 'Plus Jakarta Sans', sans-serif; text-align: justify; }
+        p { text-align: justify; }
+        .text-center-override { text-align: center !important; }
+
+        /* Font Classes */
+        .font-display { font-family: 'Space Grotesk', sans-serif; }
+        .font-body-modern { font-family: 'Inter', sans-serif; }
+
+        /* Scrollbar */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .custom-scrollbar::-webkit-scrollbar, .custom-scroll::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track, .custom-scroll::-webkit-scrollbar-track { background: transparent; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb, .custom-scroll::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%); border-radius: 10px; box-shadow: inset 2px 2px 5px rgba(0,0,0,0.1); }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover, .custom-scroll::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #3b82f6 0%, #1e40af 100%); }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: linear-gradient(180deg, rgba(96, 165, 250, 0.6) 0%, rgba(59, 130, 246, 0.6) 100%); }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, rgba(59, 130, 246, 0.8) 0%, rgba(30, 64, 175, 0.8) 100%); }
+        
+        #app-sidebar, main, .custom-scrollbar, .custom-scroll { scroll-behavior: smooth; }
+
+        /* Menu Item Styling */
+        .menu-item { display: flex; width: 100%; align-items: center; gap: 0.75rem; border-radius: 0.5rem; padding: 0.625rem 1rem; font-weight: 500; transition: all 0.2s; }
+        .menu-item-inactive { color: #4b5563; }
+        .menu-item-inactive:hover { background-color: #f3f4f6; color: #111827; }
+        .dark .menu-item-inactive:hover { background-color: rgba(255,255,255,0.05); color: #e5e7eb; }
+        .menu-item-active, .nav-item.active { background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%) !important; color: #1e40af !important; font-weight: 600; border-left: 4px solid #3b82f6; }
+        .dark .menu-item-active, .dark .nav-item.active { background: linear-gradient(135deg, #1e3a8a 0%, #0c2340 100%) !important; color: #93c5fd !important; border-left: 4px solid #3b82f6; }
+        
+        .chevron { transition: transform 0.3s ease; }
+        .group-active .chevron { transform: rotate(180deg); }
+
+        /* Dropdown transition states */
+        .dropdown-open { display: flex !important; animation: dropDownFadeIn 0.2s ease-out; }
+        @keyframes dropDownFadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Animations */
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        .shimmer { background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent); background-size: 200% 100%; animation: shimmer 3s infinite; }
+        .content-card { animation: fadeInUp 0.4s ease-out; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* PDF Template Hidden Styles */
+        #pdf-template-container { position: fixed; top: 0; left: 0; width: 750px; z-index: -9999; opacity: 0.001; pointer-events: none; background-color: white; margin: 0; padding: 0; }
+        .avoid-break { page-break-inside: avoid !important; break-inside: avoid !important; }
+    </style>
+</head>
+
+<body class="min-h-screen w-full m-0 p-0 text-gray-800 bg-gradient-to-br from-gray-50 via-blue-50 to-gray-50 dark:bg-gradient-to-br dark:from-gray-900 via-slate-900 dark:to-gray-900 transition-colors duration-300 overflow-y-auto" onload="showSection('comp-intro')">
+
+    <div id="pdf-template-container">
+        <div id="pdf-ja-content">
+            <style>
+                .ja-pdf-wrapper {
+                    font-family: "Book Antiqua", "Times New Roman", serif;
+                    font-size: 11pt;
+                    line-height: 1.5;
+                    color: black;
+                    background: white;
+                    width: 100%;
+                    max-width: 720px; 
+                    margin: 0 auto;
+                    padding: 15px 12px;
+                    box-sizing: border-box;
+                    overflow-wrap: break-word;
+                    word-wrap: break-word;
+                    word-break: break-word;
+                }
+                .ja-pdf-wrapper table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    border-spacing: 0;
+                    margin: 0;
+                    padding: 0;
+                    table-layout: fixed;
+                    page-break-inside: avoid;
+                }
+                .ja-pdf-wrapper tr {
+                    page-break-inside: auto;
+                    page-break-after: auto;
+                }
+                .ja-pdf-wrapper td, .ja-pdf-wrapper th {
+                    border: 1px solid black;
+                    padding: 6px 6px;
+                    vertical-align: top;
+                    font-size: 10pt;
+                    word-wrap: break-word;
+                    overflow-wrap: break-word;
+                    word-break: break-word;
+                    hyphens: auto;
+                    max-width: 100%;
+                    line-height: 1.4;
+                    text-align: left;
+                    white-space: normal;
+                }
+                .ja-pdf-wrapper td p, .ja-pdf-wrapper th p {
+                    margin: 0;
+                    padding: 0;
+                    word-wrap: break-word;
+                    overflow-wrap: break-word;
+                }
+                .ja-pdf-wrapper table + table {
+                    margin-top: -1px;
+                }
+                .ja-pdf-wrapper .header-container {
+                    display: flex;
+                    align-items: center;
+                    gap: 15px;
+                    padding: 5px;
+                }
+                .ja-pdf-wrapper .header-text p {
+                    margin: 0 0 3px 0;
+                    line-height: 1.3;
+                    word-wrap: break-word;
+                    overflow-wrap: break-word;
+                }
+                .ja-pdf-wrapper .header-title {
+                    font-weight: bold;
+                    text-transform: uppercase;
+                    font-size: 12pt;
+                }
+                .ja-pdf-wrapper p { 
+                    margin: 0; 
+                    line-height: 1.4; 
+                    margin-bottom: 3px;
+                    word-wrap: break-word;
+                    overflow-wrap: break-word;
+                    word-break: break-word;
+                }
+                .ja-pdf-wrapper div { 
+                    word-wrap: break-word;
+                    overflow-wrap: break-word;
+                    word-break: break-word;
+                }
+                .ja-pdf-wrapper .center { text-align: center; }
+                .ja-pdf-wrapper .bold { font-weight: bold; }
+                .ja-pdf-wrapper .italic { font-style: italic; }
+                .ja-pdf-wrapper .justify { text-align: justify; }
+                .ja-pdf-wrapper .bg-blue-light { background-color: #A6C9EC; }
+                .ja-pdf-wrapper .bg-blue-pale { background-color: #DAE9F8; }
+                .ja-pdf-wrapper .bg-blue-light p, 
+                .ja-pdf-wrapper .bg-blue-pale p { text-align: center !important; }
+                .ja-pdf-wrapper .bg-gray { background-color: #F2F2F2; }
+                .ja-pdf-wrapper ul { margin: 3px 0 3px 18px; padding: 0; line-height: 1.5; }
+                .ja-pdf-wrapper li { margin-bottom: 2px; word-wrap: break-word; overflow-wrap: break-word; }
+                .ja-pdf-wrapper .checkbox-cell { text-align: center; vertical-align: middle; font-weight: bold; }
+            </style>
+            
+            <div class="ja-pdf-wrapper">
+                <table>
+                    <tr>
+                        <td style="border-bottom: none;">
+                            <div class="header-container">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Department_of_Transportation_%28Philippines%29.svg/330px-Department_of_Transportation_%28Philippines%29.svg.png" width="70" alt="DOTr" crossorigin="anonymous">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Bagong_Pilipinas_logo.png" width="80" alt="Bagong Pilipinas" crossorigin="anonymous">
+                                
+                                <div class="header-text">
+                                    <p>Republic of the Philippines</p>
+                                    <p class="bold">DEPARTMENT OF TRANSPORTATION</p>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+
+                <table>
+                    <tr>
+                        <td class="bg-blue-light center" style="padding: 5px;">
+                            <p class="bold" style="font-size: 14pt; margin:0;">JOB ANALYSIS FORM</p>
+                        </td>
+                    </tr>
+                </table>
+
+                <table>
+                    <tr>
+                        <td>
+                            <p class="bold" style="margin-top: 5px;">Introduction</p>
+                            <p class="justify" style="margin-bottom: 8px;">This form is intended to gather comprehensive information on the job roles, responsibilities, and required competencies of employees within a specific office, service, or division. The data collected will primarily support competency framework validation and also serve as a reference for other human resource functions such as workforce planning, training needs analysis, and performance management.</p>
+                            
+                            <p class="bold">Objectives</p>
+                            <ul>
+                                <li>• Document the main and secondary responsibilities of each position.</li>
+                                <li>• Identify skills and proficiency levels required for effective performance.</li>
+                                <li>• Provide a basis for competency gap analysis and targeted development programs.</li>
+                                <li>• Ensure alignment between job roles and organizational objectives.</li>
+                            </ul>
+                        </td>
+                    </tr>
+                </table>
+
+                <table>
+                    <tr>
+                        <td class="bg-gray">
+                            <p style="font-size: 9pt;">PLEASE BE ADVISED THAT THE DEFINITIONS OF SPECIFIC TERMS AND INSTRUCTIONS OF THIS FORM ARE PROVIDED FOR YOUR REFERENCE ON THE OTHER SHEET. YOU MAY ALSO INCORPORATE ADDITIONAL ROWS BEYOND THE PROVIDED MINIMUM.</p>
+                        </td>
+                    </tr>
+                </table>
+
+                <table>
+                    <colgroup>
+                        <col style="width: 25%;">
+                        <col style="width: 75%;">
+                    </colgroup>
+                    <tr>
+                        <td><span class="bold">Full Name:</span></td>
+                        <td><span id="pdf-ja-fullname" class="bold" style="padding-left: 5px;"></span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="bold">Position Title:</span></td>
+                        <td><span id="pdf-ja-position" class="bold" style="padding-left: 5px;"></span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="bold">Office/Service/Division:</span></td>
+                        <td><span id="pdf-ja-office" class="bold" style="padding-left: 5px;"></span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="bold">Section/Project/Unit:</span></td>
+                        <td><span id="pdf-ja-section" class="bold" style="padding-left: 5px;"></span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="bold">Alternate Position:</span></td>
+                        <td><span id="pdf-ja-alternate" class="bold" style="padding-left: 5px;"></span></td>
+                    </tr>
+                </table>
+
+                <table>
+                    <tr>
+                        <td class="bg-blue-pale center" style="border-bottom: 3px double black; padding: 5px;">
+                            <p class="bold">JOB PURPOSE</p>
+                            <p class="italic" style="font-size: 9pt;">(Brief Description of the general function and purpose of the position.)</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="min-height: 60px; vertical-align: top;">
+                            <div id="pdf-ja-purpose" style="white-space: pre-wrap; margin-top: 5px; padding: 5px; word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; line-height: 1.4;"></div>
+                        </td>
+                    </tr>
+                </table>
+
+                <table>
+                    <tr>
+                        <td class="bg-blue-pale center">
+                            <p class="bold">MAIN DUTIES AND RESPONSIBILITIES</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="bg-gray">
+                            <p class="justify">This section provides a detailed outline of the primary tasks, functions, and obligations associated with the position. It defines the key activities that the employee is expected to perform to achieve the objectives of the role. These responsibilities should be specific, measurable, and aligned with the overall goals of the organization.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="min-height: 150px; vertical-align: top;">
+                            <div id="pdf-ja-main-duties" style="white-space: pre-wrap; margin-top: 5px; padding: 5px; word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; line-height: 1.4;"></div>
+                        </td>
+                    </tr>
+                </table>
+
+                <table>
+                    <tr>
+                        <td class="bg-blue-pale center">
+                            <p class="bold">SECONDARY DUTIES & RESPONSIBILITIES</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="bg-gray">
+                            <p class="justify">This section lists additional duties that support the main responsibilities of the position. These tasks are not the primary focus of the role but are necessary to ensure smooth operations and assist in achieving departmental or organizational objectives. They may include occasional assignments, administrative support, or other related activities as required.</p>
+                        </td>
+                    </tr>
+                </table>
+
+                <table>
+                    <colgroup>
+                        <col style="width: 12%;">
+                        <col style="width: 38%;">
+                        <col style="width: 10%;">
+                        <col style="width: 10%;">
+                        <col style="width: 10%;">
+                        <col style="width: 10%;">
+                        <col style="width: 10%;">
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <td rowspan="2" class="center bold">NO.</td>
+                            <td rowspan="2" class="center bold">TASKS</td>
+                            <td colspan="5" class="center bold">FREQUENCY OF TASKS</td>
+                        </tr>
+                        <tr>
+                            <td class="center bold" style="font-size: 8pt;">Daily</td>
+                            <td class="center bold" style="font-size: 8pt;">Weekly</td>
+                            <td class="center bold" style="font-size: 8pt;">Monthly</td>
+                            <td class="center bold" style="font-size: 8pt;">Quarterly</td>
+                            <td class="center bold" style="font-size: 8pt;">Periodically / As Instructed</td>
+                        </tr>
+                    </thead>
+                    <tbody id="pdf-ja-duties-body">
+                    </tbody>
+                </table>
+
+                <table>
+                    <tr>
+                        <td class="bg-blue-pale center">
+                            <p class="bold">REQUIRED COMPETENCIES</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="bg-gray">
+                            <p class="justify">This outlines the fundamental abilities, knowledge, and competencies required to perform the duties of the position effectively. These skills are critical for achieving job objectives and ensuring successful performance. Typically, it includes technical, behavioral, and leadership/managerial skills (if applicable) necessary for the role. <i>(<b>Note:</b> To be filled by the immediate supervisor)</i></p>
+                        </td>
+                    </tr>
+                </table>
+
+                <table>
+                    <colgroup>
+                        <col style="width: 12%;">
+                        <col style="width: 38%;">
+                        <col style="width: 12.5%;">
+                        <col style="width: 12.5%;">
+                        <col style="width: 12.5%;">
+                        <col style="width: 12.5%;">
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <td rowspan="2" class="center bold">NO.</td>
+                            <td rowspan="2" class="center bold">SKILLS</td>
+                            <td colspan="4" class="center bold">PROFICIENCY LEVEL</td>
+                        </tr>
+                        <tr>
+                            <td class="center bold" style="font-size: 8pt;">BASIC</td>
+                            <td class="center bold" style="font-size: 8pt;">INTERMEDIATE</td>
+                            <td class="center bold" style="font-size: 8pt;">ADVANCED</td>
+                            <td class="center bold" style="font-size: 8pt;">SUPERIOR</td>
+                        </tr>
+                    </thead>
+                    <tbody id="pdf-ja-skills-body">
+                    </tbody>
+                </table>
+
+                <table>
+                    <colgroup>
+                        <col style="width: 5%;">
+                        <col style="width: 95%;">
+                    </colgroup>
+                    <tr>
+                        <td colspan="2" class="bg-blue-pale center">
+                            <p class="bold">TOOLS AND EQUIPMENT</p>
+                            <p class="italic" style="font-size: 9pt;">List any tools, equipment, or software regularly used.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="min-height: 40px; vertical-align: top;">
+                            <div id="pdf-ja-tools" style="white-space: pre-wrap; margin-top: 5px; padding: 5px; word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; line-height: 1.4;"></div>
+                        </td>
+                    </tr>
+                </table>
+
+                <table>
+                    <tr>
+                        <td class="bg-blue-pale center">
+                            <p class="bold">CHALLENGES AND CRITICAL ISSUES</p>
+                            <p class="italic" style="font-size: 9pt;">What are the most challenging aspects of this job?</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="min-height: 60px; vertical-align: top;">
+                            <div id="pdf-ja-challenges" style="white-space: pre-wrap; margin-top: 5px; padding: 5px; word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; line-height: 1.4;"></div>
+                        </td>
+                    </tr>
+                </table>
+
+                <table>
+                    <tr>
+                        <td class="bg-blue-pale center">
+                            <p class="bold">ADDITIONAL COMMENTS</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="min-height: 60px; vertical-align: top;">
+                            <div id="pdf-ja-comments" style="white-space: pre-wrap; margin-top: 5px; padding: 5px; word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; line-height: 1.4;"></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="border-top: none; font-size: 8pt;">Note: You may incorporate additional rows beyond the provided minimum.</td>
+                    </tr>
+                </table>
+
+                <div style="page-break-inside: avoid !important; break-inside: avoid !important; display: block; width: 100%;">
+                    <table style="page-break-inside: avoid !important; break-inside: avoid !important; width: 100%;">
+                        <tr style="page-break-inside: avoid !important; break-inside: avoid !important;">
+                            <td style="padding: 10px;">
+                                <p class="justify" style="margin-bottom: 20px;">I hereby certify that all information and statements provided herewith are accurate. I further attest that these details truthfully reflect my current knowledge and understanding.</p>
+                                
+                                <p style="margin-bottom: 5px;">Signature:</p>
+                                <div style="display: flex; justify-content: flex-start; align-items: flex-end; height: 50px; margin-bottom: 5px; margin-left: 60px;">
+                                    <img id="pdf-ja-signature-preview" src="" style="max-height: 50px; max-width: 200px; display: none; mix-blend-mode: multiply;" alt="Signature">
+                                </div>
+                                <div style="border-bottom: 1px solid black; width: 250px; margin-top: -15px; margin-bottom: 20px;"></div>
+                                <div style="margin-top: 20px; margin-bottom: 10px;">
+                                    <p style="margin: 0 0 5px 0; font-size: 10pt;">Date:</p>
+                                    <div id="pdf-ja-date" style="border-bottom: 1px solid black; min-height: 20px; padding-top: 5px; word-wrap: break-word; width: 100%;"></div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="main-app" class="min-h-screen xl:flex w-full bg-gray-50 text-gray-900 dark:bg-gray-900 transition-colors duration-300 overflow-y-auto">
+        
+        <aside id="app-sidebar" class="fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-gradient-to-b from-white via-blue-50 to-white dark:bg-gradient-to-b dark:from-gray-900 dark:via-slate-800 dark:to-gray-900 dark:border-gray-700 border-gray-200 h-screen transition-all duration-300 ease-in-out z-50 border-r w-[290px] -translate-x-full lg:translate-x-0 shadow-xl dark:shadow-2xl">
+            <div class="py-8 flex justify-start items-center gap-3">
+                <img id="logo-icon" src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Department_of_Transportation_%28Philippines%29.svg/330px-Department_of_Transportation_%28Philippines%29.svg.png" class="w-8 h-8 hidden" alt="Logo">
+                <div id="logo-full" class="flex items-center gap-3">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Department_of_Transportation_%28Philippines%29.svg/330px-Department_of_Transportation_%28Philippines%29.svg.png" class="w-8 h-8" alt="Logo">
+                    <span class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">DOTr-HRDD</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col overflow-y-auto duration-300 ease-linear custom-scrollbar">
+                <nav class="mb-6">
+                    <div class="flex flex-col gap-4">
+                        <div>
+                            <h2 class="mb-4 text-xs uppercase flex leading-[20px] text-gray-400 font-semibold justify-start">
+                                <span class="menu-item-text">Menu</span>
+                            </h2>
+                            <ul class="flex flex-col gap-2">
+                                <li class="group group-active" id="group-competency">
+                                    <button onclick="toggleSidebarMenu('competency')" class="menu-item nav-item active menu-item-active dark:text-gray-400 dark:hover:bg-white/5 w-full justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <svg class="w-5 h-5 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138z" /></svg>
+                                            <span class="menu-item-text">Competency</span>
+                                        </div>
+                                        <svg class="chevron w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                                    </button>
+                                    <ul id="submenu-competency" class="flex flex-col gap-1 mt-1 menu-item-text pl-6">
+                                        <li><button onclick="showSection('comp-intro')" id="nav-comp-intro" class="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/5 transition-colors nav-sub-item">Introduction</button></li>
+                                        <li>
+                                            <button onclick="showSection('reports')" id="nav-reports" class="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-white/5 transition-colors nav-sub-item">Reports</button>
+                                        </li>
+                                        <li><button onclick="showSection('comp-form')" id="nav-comp-form" class="w-full text-left px-3 py-2 rounded-lg text-sm text-brand-600 dark:text-brand-400 font-semibold hover:text-gray-900 hover:bg-gray-100 dark:hover:text-white dark:hover:bg-white/5 transition-colors nav-sub-item">Job Analysis Form</button></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </nav>
+            </div>
+        </aside>
+
+        <div id="main-content-wrapper" class="flex-1 flex flex-col transition-all duration-300 ease-in-out lg:ml-[290px] min-h-screen overflow-y-auto">
+            <header class="sticky top-0 flex w-full bg-gradient-to-r from-white via-blue-50 to-white border-b border-gray-200 z-30 h-16 sm:h-20 dark:bg-gradient-to-r dark:from-gray-900 dark:via-slate-800 dark:to-gray-900 dark:border-gray-700 transition-colors duration-300 shadow-md" id="main-header">
+                <div class="flex flex-col items-center justify-between flex-grow lg:flex-row lg:px-6">
+                    <div class="flex items-center justify-between w-full gap-2 px-3 py-3 border-b border-gray-200 dark:border-gray-800 sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">
+                        <button class="items-center justify-center w-10 h-10 text-gray-500 border border-gray-200 rounded-lg z-30 lg:flex dark:text-gray-400 lg:h-11 lg:w-11 lg:border dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" onclick="toggleSidebarLogic()" aria-label="Toggle Sidebar">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                        </button>
+                        <div class="hidden lg:block ml-4 relative">
+                            <h2 class="text-xl font-bold text-gray-800 dark:text-white" id="section-title">Job Analysis Form</h2>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 font-body-modern" id="welcome-text">Fill out your competency framework details.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-end w-full gap-4 px-5 py-4 lg:flex lg:px-0">
+                        <div class="hidden sm:flex flex-col items-end mr-2 border-r border-gray-200 dark:border-gray-700 pr-4">
+                            <span id="header-time" class="text-sm font-bold text-gray-800 dark:text-white font-display"></span>
+                            <span id="header-date" class="text-xs text-gray-500 dark:text-gray-400"></span>
+                        </div>
+
+                        <div class="flex items-center gap-2 sm:gap-3">
+                            <button onclick="toggleTheme()" class="flex items-center justify-center w-11 h-11 text-gray-500 transition-colors bg-white border border-gray-200 rounded-full hover:text-gray-700 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white">
+                                <svg class="hidden dark:block" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                                <svg class="block dark:hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                            </button>
+
+                            <div class="relative">
+                                <button onclick="toggleNotifDropdown(event)" class="relative flex items-center justify-center w-11 h-11 text-gray-500 transition-colors bg-white border border-gray-200 rounded-full hover:text-gray-700 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                                    <span id="header-notif-badge" class="absolute top-2 right-2 flex h-2.5 w-2.5 rounded-full bg-red-500 hidden animate-pulse border-2 border-white dark:border-gray-900"></span>
+                                </button>
+
+                                <div id="notif-dropdown-menu" class="hidden absolute right-0 mt-3 flex w-80 flex-col rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-800 z-50 overflow-hidden">
+                                    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                                        <span class="font-bold text-gray-800 dark:text-white">Notifications</span>
+                                        <button onclick="markAllRead()" class="text-xs text-brand-600 dark:text-brand-400 hover:underline">Mark all read</button>
+                                    </div>
+                                    <div id="header-notif-list" class="flex flex-col max-h-80 overflow-y-auto custom-scrollbar divide-y divide-gray-100 dark:divide-gray-700">
+                                        <div class="p-8 text-center text-slate-400 dark:text-gray-500">No notifications</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="relative">
+                            <button id="user-toggle-btn" class="flex items-center text-gray-700 dropdown-toggle dark:text-gray-400 ml-2" onclick="toggleUserDropdown(event)">
+                                <span class="mr-3 overflow-hidden rounded-full h-11 w-11 bg-brand-100 text-brand-600 border border-brand-200 flex items-center justify-center font-bold dark:border-gray-800 dark:bg-brand-900/30" id="user-initials">
+                                    RM
+                                </span>
+                                <span class="block mr-1 font-medium text-sm hidden sm:block" id="display-user-name">Roselle Maglajos</span>
+                                <svg class="stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200" width="18" height="20" viewBox="0 0 18 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M4.3125 8.65625L9 13.3437L13.6875 8.65625" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+
+                            <div id="user-dropdown-menu" class="hidden absolute right-0 mt-[17px] flex w-[260px] flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-800 dark:bg-gray-800 z-50">
+                                <div>
+                                    <span class="block font-medium text-gray-700 text-sm dark:text-gray-200">User Profile</span>
+                                    <span class="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">Employee</span>
+                                </div>
+                                <ul class="flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+                                    <li>
+                                        <button onclick="handleLogout()" class="flex items-center w-full gap-3 px-3 py-2 mt-3 font-medium text-red-600 rounded-lg text-sm hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10 transition-colors">
+                                            Sign out
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main id="content-area" class="p-0 lg:p-4 mx-auto w-full max-w-screen-2xl flex-1 overflow-y-auto custom-scrollbar transition-colors duration-300">
+                
+                <section id="section-under-construction" class="content-section hidden min-h-[80vh] flex-col items-center justify-center p-4">
+                    <div class="relative w-full max-w-3xl bg-white backdrop-blur-xl border border-slate-200 rounded-3xl shadow-[0_0_40px_rgba(0,0,0,0.1)] p-8 md:p-12 text-center overflow-hidden mx-auto mt-10">
+                        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
+                        <div class="absolute -top-24 -right-24 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl"></div>
+                        <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl"></div>
+
+                        <div class="relative z-10 space-y-2 mb-8">
+                            <h2 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 tracking-tight">
+                                Module Under Construction
+                            </h2>
+                            <p class="text-slate-600 max-w-lg mx-auto text-sm md:text-base">
+                                Our developers are currently building this module. While we compile the code, help us squash some rogue system bugs!
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="section-comp-intro" class="content-section p-8 hidden min-h-full">
+                    <div class="w-full max-w-5xl mx-auto">
+                        <div class="bg-gradient-to-br from-white via-blue-50 to-white dark:bg-gradient-to-br dark:from-slate-800 dark:via-gray-800 dark:to-slate-800 rounded-2xl p-6 shadow-lg border border-slate-100 dark:border-gray-700 transition-colors">
+                            <h3 class="font-semibold text-slate-800 dark:text-white mb-4 text-xl flex items-center gap-2"><span class="w-1 h-6 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"></span>Competency Introduction</h3>
+                            <div style="position: relative; width: 100%; height: 0; padding-top: 56.2500%; padding-bottom: 0; box-shadow: 0 4px 12px 0 rgba(0,0,0,0.1); border-radius: 12px; overflow: hidden;">
+                                <iframe loading="lazy" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; border: none; padding: 0; margin: 0;" 
+                                src="https://www.canva.com/design/DAG4b-Sm0Og/b791BUQ43v-qLEyKJJVVfw/view?embed" allowfullscreen>
+                                </iframe>
+                            </div>
+                            <p class="text-sm text-slate-500 dark:text-gray-400 mt-4 italic">Review the presentation above to understand the core competencies essential for your role.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="section-comp-form" class="content-section p-8 hidden min-h-full">
+                    <div class="w-full max-w-7xl mx-auto">
+                        <div class="bg-gradient-to-br from-white via-blue-50 to-white dark:bg-gradient-to-br dark:from-slate-800 dark:via-gray-800 dark:to-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-gray-700 overflow-hidden transition-colors">
+                            <div class="bg-gradient-to-r from-blue-700 via-blue-600 to-blue-500 p-6 text-white shadow-lg">
+                                <h2 class="text-2xl font-display font-bold mb-1">Job Analysis Form</h2>
+                                <p class="opacity-90 text-sm">Fill out the details below to generate your Job Analysis document.</p>
+                            </div>
+                            
+                            <form id="jobAnalysisForm" class="p-6 space-y-6">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">First Name</label>
+                                        <input type="text" id="ja-firstname" class="w-full border border-slate-300 dark:border-gray-600 bg-transparent dark:text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Middle Name</label>
+                                        <input type="text" id="ja-middlename" class="w-full border border-slate-300 dark:border-gray-600 bg-transparent dark:text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Surname</label>
+                                        <input type="text" id="ja-surname" class="w-full border border-slate-300 dark:border-gray-600 bg-transparent dark:text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                    </div>
+
+                                    <div class="md:col-span-3">
+                                        <label class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Position Title</label>
+                                        <input type="text" id="ja-position" class="w-full border border-slate-300 dark:border-gray-600 bg-transparent dark:text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                    </div>
+                                    
+                                    <div class="md:col-span-3">
+                                        <label class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Office/Service/Division</label>
+                                        <select id="ja-office" class="w-full border border-slate-300 dark:border-gray-600 rounded-lg px-4 py-2 bg-transparent dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                            <option value="" disabled selected>Select Office / Unit Head</option>
+                                            <option value="Human Resource Development Division - Mary Grace L. Escoto">Human Resource Development Division - Mary Grace L. Escoto</option>
+                                            <option value="Asset Management Division - Jericho V. Cabacungan">Asset Management Division - Jericho V. Cabacungan</option>
+                                            <option value="Cash Division - Ma. Jesusa M. Rebadulla">Cash Division - Ma. Jesusa M. Rebadulla</option>
+                                            <option value="Central Records Division - Imelda B. Bongon">Central Records Division - Imelda B. Bongon</option>
+                                            <option value="General Services Division - Philip Niño P. Topacio">General Services Division - Philip Niño P. Topacio</option>
+                                            <option value="Human Resource Management Division - Arwonder-V C. Gismundo">Human Resource Management Division - Arwonder-V C. Gismundo</option>
+                                            <option value="Computer and Network Systems Division - Edgar D. Fernando">Computer and Network Systems Division - Edgar D. Fernando</option>
+                                            <option value="Information Systems and Security Division - Murffy P. Gopez">Information Systems and Security Division - Murffy P. Gopez</option>
+                                            <option value="BAC Secretariat Division - Armi Cecilia L. Dela Cruz">BAC Secretariat Division - Armi Cecilia L. Dela Cruz</option>
+                                            <option value="Contract Management Division - Eric E. Evardone">Contract Management Division - Eric E. Evardone</option>
+                                            <option value="Procurement Planning and Management Division - Eugene R. Cecilio">Procurement Planning and Management Division - Eugene R. Cecilio</option>
+                                            <option value="Management Division - Lilibeth M. Baldanzo">Management Division - Lilibeth M. Baldanzo</option>
+                                            <option value="Performance Monitoring and Evaluation Division - Annaleen L. Basquiña">Performance Monitoring and Evaluation Division - Annaleen L. Basquiña</option>
+                                            <option value="Accounting Division - Loida J. Marzo">Accounting Division - Loida J. Marzo</option>
+                                            <option value="Budget division - Aliza Marie Guilot- Salarda">Budget division - Aliza Marie Guilot- Salarda</option>
+                                            <option value="Internal Audit Division I - Evelyn S. Ordinario">Internal Audit Division I - Evelyn S. Ordinario</option>
+                                            <option value="Internal Audit Division - Ma. Chelo E. Santos">Internal Audit Division - Ma. Chelo E. Santos</option>
+                                            <option value="Contract Review and Documentation Division - Joseph Christian N. Alvarez">Contract Review and Documentation Division - Joseph Christian N. Alvarez</option>
+                                            <option value="Legal Affairs and Research Division - Amarra A. Robles-Fabro">Legal Affairs and Research Division - Amarra A. Robles-Fabro</option>
+                                            <option value="Legislative and Issuances Division - Princess Karina M. Marquez">Legislative and Issuances Division - Princess Karina M. Marquez</option>
+                                            <option value="Information Division - Robert James T. De Roque">Information Division - Robert James T. De Roque</option>
+                                            <option value="Air Transportation Planning Division - Rodrigo C. De Vera">Air Transportation Planning Division - Rodrigo C. De Vera</option>
+                                            <option value="Rail Transportation Planning Division - Marie Koreen C. Hidalgo">Rail Transportation Planning Division - Marie Koreen C. Hidalgo</option>
+                                            <option value="Road Transportation Planning Division - Ivan Edward D. Francisco">Road Transportation Planning Division - Ivan Edward D. Francisco</option>
+                                            <option value="Water Transportation Planning Division - John Patrick A. Dayao">Water Transportation Planning Division - John Patrick A. Dayao</option>
+                                            <option value="International Cooperation Division - Jasmine Marie C. Uson">International Cooperation Division - Jasmine Marie C. Uson</option>
+                                        </select>
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Section/Project/Unit</label>
+                                        <input type="text" id="ja-section" class="w-full border border-slate-300 dark:border-gray-600 bg-transparent dark:text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                    </div>
+                                    <div class="md:col-span-1">
+                                        <label class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Alternate Position</label>
+                                        <input type="text" id="ja-alternate" class="w-full border border-slate-300 dark:border-gray-600 bg-transparent dark:text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Job Purpose</label>
+                                    <textarea id="ja-purpose" rows="2" class="w-full border border-slate-300 dark:border-gray-600 bg-transparent dark:text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Main Duties and Responsibilities</label>
+                                    <textarea id="ja-main-duties" rows="3" class="w-full border border-slate-300 dark:border-gray-600 bg-transparent dark:text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"></textarea>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between items-center mb-2">
+                                        <label class="block text-sm font-medium text-slate-700 dark:text-gray-300">Secondary Duties & Responsibilities</label>
+                                        <button type="button" onclick="addJADutyRow()" class="text-xs bg-brand-100 text-brand-700 dark:bg-brand-900/30 dark:text-brand-400 px-3 py-1 rounded-md font-semibold hover:bg-brand-200 dark:hover:bg-brand-900/50">Add Row +</button>
+                                    </div>
+                                    <div class="border border-slate-300 dark:border-gray-600 rounded-lg overflow-hidden">
+                                        <table class="w-full text-sm text-left" id="ja-duties-table">
+                                            <thead class="bg-slate-50 dark:bg-gray-700 text-slate-700 dark:text-gray-300">
+                                                <tr>
+                                                    <th class="px-4 py-2 font-medium w-2/3">Secondary Duty</th>
+                                                    <th class="px-4 py-2 font-medium w-1/3">Frequency</th>
+                                                    <th class="px-4 py-2 font-medium w-10"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="dark:bg-gray-800">
+                                                <tr class="border-t border-slate-200 dark:border-gray-600">
+                                                    <td class="p-2"><input type="text" class="ja-duty-input w-full border border-slate-300 dark:border-gray-600 bg-transparent dark:text-white rounded px-2 py-1"></td>
+                                                    <td class="p-2">
+                                                        <select class="ja-freq-select w-full border border-slate-300 dark:border-gray-600 rounded px-2 py-1 bg-transparent dark:bg-gray-800 dark:text-white">
+                                                            <option value="Daily">Daily</option>
+                                                            <option value="Weekly">Weekly</option>
+                                                            <option value="Monthly">Monthly</option>
+                                                            <option value="Quarterly">Quarterly</option>
+                                                            <option value="Periodically/As indicated">Periodically/As indicated</option>
+                                                        </select>
+                                                    </td>
+                                                    <td class="p-2 text-center">
+                                                        <button type="button" onclick="this.closest('tr').remove()" class="text-red-500 font-bold hover:text-red-700">X</button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between items-center mb-2">
+                                        <label class="block text-sm font-medium text-slate-700 dark:text-gray-300">Skills / Competency</label>
+                                        <button type="button" onclick="addJASkillRow()" class="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-3 py-1 rounded-md font-semibold hover:bg-emerald-200 dark:hover:bg-emerald-900/50">Add Row +</button>
+                                    </div>
+                                    <div class="border border-slate-300 dark:border-gray-600 rounded-lg overflow-hidden">
+                                        <table class="w-full text-sm text-left" id="ja-skills-table">
+                                            <thead class="bg-slate-50 dark:bg-gray-700 text-slate-700 dark:text-gray-300">
+                                                <tr>
+                                                    <th class="px-4 py-2 font-medium w-2/3">Skill / Competency</th>
+                                                    <th class="px-4 py-2 font-medium w-1/3">Level</th>
+                                                    <th class="px-4 py-2 font-medium w-10"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="dark:bg-gray-800">
+                                                <tr class="border-t border-slate-200 dark:border-gray-600">
+                                                    <td class="p-2"><input type="text" class="ja-skill-input w-full border border-slate-300 dark:border-gray-600 bg-transparent dark:text-white rounded px-2 py-1"></td>
+                                                    <td class="p-2">
+                                                        <select class="ja-level-select w-full border border-slate-300 dark:border-gray-600 rounded px-2 py-1 bg-transparent dark:bg-gray-800 dark:text-white">
+                                                            <option value="Basic">Basic</option>
+                                                            <option value="Intermediate">Intermediate</option>
+                                                            <option value="Advance">Advance</option>
+                                                            <option value="Superior">Superior</option>
+                                                        </select>
+                                                    </td>
+                                                    <td class="p-2 text-center">
+                                                        <button type="button" onclick="this.closest('tr').remove()" class="text-red-500 font-bold hover:text-red-700">X</button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Tools and Equipment</label>
+                                    <textarea id="ja-tools" rows="2" class="w-full border border-slate-300 dark:border-gray-600 bg-transparent dark:text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Challenges and Critical Issues</label>
+                                    <textarea id="ja-challenges" rows="2" class="w-full border border-slate-300 dark:border-gray-600 bg-transparent dark:text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Additional Comments</label>
+                                    <textarea id="ja-comments" rows="2" class="w-full border border-slate-300 dark:border-gray-600 bg-transparent dark:text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-brand-500 focus:outline-none"></textarea>
+                                </div>
+
+                                <div>
+                                    <h3 class="text-lg font-bold text-slate-800 dark:text-white border-b border-slate-200 dark:border-gray-700 pb-2 mb-4 mt-6">Signature Attachment</h3>
+                                    <p class="text-sm text-slate-500 dark:text-gray-400 mb-3">Please upload your e-signature</p>
+                                    
+                                    <div id="ja-drop-zone" class="relative border-2 border-dashed border-slate-300 dark:border-gray-600 rounded-xl p-8 text-center cursor-pointer hover:bg-slate-50 dark:hover:bg-gray-700/50 transition-all duration-200 group bg-slate-50/50 dark:bg-gray-800/50">
+                                        <input type="file" id="ja-file-upload" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                                        <div class="flex flex-col items-center gap-3 pointer-events-none">
+                                            <div class="w-14 h-14 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center group-hover:bg-emerald-100 dark:group-hover:bg-emerald-800/50 group-hover:scale-110 transition-all duration-300 shadow-sm">
+                                                <svg class="w-7 h-7 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <span class="text-emerald-600 dark:text-emerald-400 font-bold hover:underline text-lg">Click to upload</span> 
+                                                <span class="text-slate-500 dark:text-gray-400 text-lg">or drag and drop</span>
+                                            </div>
+                                            <p class="text-xs text-slate-400 font-medium tracking-wide">JPG or PNG (MAX. 10MB)</p>
+                                        </div>
+                                    </div>
+                                    <ul id="ja-file-list" class="mt-4 space-y-2 empty:hidden"></ul>
+                                </div>
+
+                                <div class="pt-4 border-t border-slate-200 dark:border-gray-700">
+                                    <button type="button" onclick="generateJobAnalysisPDF()" class="w-full px-6 py-3 bg-gradient-to-r from-brand-600 to-brand-700 text-white font-bold rounded-xl hover:from-brand-700 hover:to-brand-800 transition-all shadow-lg">Generate and View Job Analysis PDF</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+                
+                <section id="section-logout" class="content-section p-8 hidden">
+                    <div class="flex items-center justify-center h-full min-h-96">
+                        <div class="content-card bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-sm border border-slate-100 dark:border-gray-700 max-w-md w-full text-center transition-colors">
+                            <div class="w-20 h-20 mx-auto rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-6">
+                                <svg class="w-10 h-10 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                            </div>
+                            <h3 class="text-xl font-bold text-slate-800 dark:text-white mb-2">Ready to Leave?</h3>
+                            <p class="text-slate-500 dark:text-gray-400 mb-6 font-body-modern">You will be logged out of your DOTr-HRDD Learning Portal session.</p>
+                            <div class="flex gap-3 justify-center">
+                                <button onclick="showSection('comp-intro')" class="px-6 py-2.5 border border-slate-200 dark:border-gray-600 text-slate-600 dark:text-gray-300 font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors"> Cancel </button> 
+                                <button onclick="confirmLogout()" class="px-6 py-2.5 bg-red-500 text-white font-medium rounded-xl hover:bg-red-600 transition-colors"> Yes, Logout </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <div id="pdf-viewer-modal" class="fixed inset-0 z-[65] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm hidden transition-all duration-300 opacity-0">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden transform scale-95 transition-transform duration-300 flex flex-col max-h-[90vh]">
+                        <div class="bg-gradient-to-r from-blue-600 to-blue-700 p-4 flex justify-between items-center text-white flex-shrink-0">
+                            <div class="flex items-center gap-3">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                <h3 class="text-lg font-bold" id="pdf-title">PDF Document</h3>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="downloadPDF()" class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg font-medium transition-colors text-sm flex items-center">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                    Download
+                                </button>
+                                <button onclick="closePDFViewer()" class="text-white/70 hover:text-white transition-colors">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="pdf-viewer-content" class="flex-1 overflow-auto bg-slate-100 flex items-center justify-center p-4">
+                            <div class="bg-white rounded-lg shadow-lg" id="pdf-display-container" style="max-width: 900px; width: 100%; min-height: 600px; display: flex; align-items: center; justify-content: center;"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // --- Digital Clock Logic ---
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            const dateStr = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+            const timeEl = document.getElementById('header-time');
+            const dateEl = document.getElementById('header-date');
+            if (timeEl) timeEl.textContent = timeStr;
+            if (dateEl) dateEl.textContent = dateStr;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // --- UI & SIDEBAR TOGGLES ---
+        let isSidebarExpanded = true;
+        let isMobileOpen = false;
+        let currentPDFUrl = null;
+        let currentPDFFilename = 'document.pdf';
+
+        function toggleSidebarLogic() {
+            if (window.innerWidth >= 1024) {
+                isSidebarExpanded = !isSidebarExpanded;
+                updateSidebarClasses();
+            } else {
+                toggleMobileSidebar();
+            }
+        }
+
+        function toggleMobileSidebar() {
+            isMobileOpen = !isMobileOpen;
+            updateSidebarClasses();
+        }
+
+        function updateSidebarClasses() {
+            const sidebar = document.getElementById('app-sidebar');
+            const mainContent = document.getElementById('main-content-wrapper');
+            const logoFull = document.getElementById('logo-full');
+            const logoIcon = document.getElementById('logo-icon');
+            const textElements = document.querySelectorAll('.menu-item-text');
+
+            if(isMobileOpen) {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.add('translate-x-0');
+            } else if(window.innerWidth < 1024) {
+                sidebar.classList.add('-translate-x-full');
+                sidebar.classList.remove('translate-x-0');
+            }
+
+            if (window.innerWidth >= 1024) {
+                if(isSidebarExpanded) {
+                    sidebar.classList.remove('w-[90px]');
+                    sidebar.classList.add('w-[290px]');
+                    mainContent.classList.remove('lg:ml-[90px]');
+                    mainContent.classList.add('lg:ml-[290px]');
+                    logoFull.classList.remove('hidden');
+                    logoIcon.classList.add('hidden');
+                    textElements.forEach(el => el.classList.remove('hidden'));
+                } else {
+                    sidebar.classList.remove('w-[290px]');
+                    sidebar.classList.add('w-[90px]');
+                    mainContent.classList.remove('lg:ml-[290px]');
+                    mainContent.classList.add('lg:ml-[90px]');
+                    logoFull.classList.add('hidden');
+                    logoIcon.classList.remove('hidden');
+                    textElements.forEach(el => el.classList.add('hidden'));
+                }
+            }
+        }
+
+        function toggleTheme() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('color-theme', 'light');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('color-theme', 'dark');
+            }
+        }
+
+        function toggleSidebarMenu(groupId) {
+            const submenu = document.getElementById('submenu-' + groupId);
+            const liGroup = document.getElementById('group-' + groupId);
+            
+            if (submenu.classList.contains('hidden')) {
+                submenu.classList.remove('hidden');
+                liGroup.classList.add('group-active');
+            } else {
+                submenu.classList.add('hidden');
+                liGroup.classList.remove('group-active');
+            }
+        }
+
+        function showSection(section) {
+            document.querySelectorAll('.content-section').forEach(el => el.classList.add('hidden'));
+            const targetSectionId = `section-${section}`;
+
+            const targetElement = document.getElementById(targetSectionId);
+            if (targetElement) {
+                targetElement.classList.remove('hidden');
+                if(targetSectionId === 'section-under-construction') targetElement.classList.add('flex');
+            } else {
+                const underConstruction = document.getElementById('section-under-construction');
+                if(underConstruction) underConstruction.classList.remove('hidden');
+                if(underConstruction) underConstruction.classList.add('flex');
+            }
+
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('active', 'menu-item-active');
+                el.classList.add('menu-item-inactive', 'dark:text-gray-400', 'dark:hover:bg-white/5');
+            });
+            document.querySelectorAll('.nav-sub-item').forEach(el => {
+                el.classList.remove('text-brand-600', 'dark:text-brand-400', 'font-semibold');
+            });
+
+            const activeNav = document.getElementById(`nav-${section}`);
+            if (activeNav) {
+                if (activeNav.classList.contains('nav-sub-item')) {
+                    activeNav.classList.add('text-brand-600', 'dark:text-brand-400', 'font-semibold');
+                    const parentGroupBtn = activeNav.closest('li.group').querySelector('.nav-item');
+                    if(parentGroupBtn) {
+                        parentGroupBtn.classList.remove('menu-item-inactive', 'dark:text-gray-400', 'dark:hover:bg-white/5');
+                        parentGroupBtn.classList.add('active', 'menu-item-active');
+                    }
+                } else {
+                    activeNav.classList.remove('menu-item-inactive', 'dark:text-gray-400', 'dark:hover:bg-white/5');
+                    activeNav.classList.add('active', 'menu-item-active');
+                }
+            }
+
+            const headerTitle = document.getElementById('section-title');
+            const titles = { 'comp-intro': 'Competency Introduction', 'comp-form': 'Job Analysis Form', 'reports': 'Reports', 'logout': 'Logout' };
+            if(headerTitle) headerTitle.textContent = titles[section] || 'Under Construction';
+        }
+
+        // --- Dropdown Toggle Logic ---
+        function toggleUserDropdown(e) {
+            e.stopPropagation();
+            const menu = document.getElementById('user-dropdown-menu');
+            const notifMenu = document.getElementById('notif-dropdown-menu');
+            
+            if(notifMenu) {
+                notifMenu.classList.add('hidden');
+                notifMenu.classList.remove('dropdown-open');
+            }
+            
+            if (menu.classList.contains('hidden')) {
+                menu.classList.remove('hidden');
+                menu.classList.add('dropdown-open');
+            } else {
+                menu.classList.add('hidden');
+                menu.classList.remove('dropdown-open');
+            }
+        }
+
+        function toggleNotifDropdown(e) {
+            e.stopPropagation();
+            const menu = document.getElementById('notif-dropdown-menu');
+            const userMenu = document.getElementById('user-dropdown-menu');
+            
+            if(userMenu) {
+                userMenu.classList.add('hidden');
+                userMenu.classList.remove('dropdown-open');
+            }
+            
+            if (menu.classList.contains('hidden')) {
+                menu.classList.remove('hidden');
+                menu.classList.add('dropdown-open');
+            } else {
+                menu.classList.add('hidden');
+                menu.classList.remove('dropdown-open');
+            }
+        }
+
+        document.addEventListener('click', () => {
+            const userMenu = document.getElementById('user-dropdown-menu');
+            const notifMenu = document.getElementById('notif-dropdown-menu');
+            
+            if(userMenu) {
+                userMenu.classList.add('hidden');
+                userMenu.classList.remove('dropdown-open');
+            }
+            if(notifMenu) {
+                notifMenu.classList.add('hidden');
+                notifMenu.classList.remove('dropdown-open');
+            }
+        });
+
+        function handleLogout() { showSection('logout'); }
+        function confirmLogout() { window.location.href = 'login.html'; }
+        function markAllRead() { /* Placeholder for notifications read state */ }
+
+        // --- PDF GENERATION & MODAL VIEWER ---
+        
+        function openPDFInModal(pdfUrl, title = 'PDF Document', filename = 'document.pdf') {
+            const container = document.getElementById('pdf-display-container');
+            currentPDFUrl = pdfUrl;
+            currentPDFFilename = filename;
+            
+            document.getElementById('pdf-title').textContent = title;
+            container.innerHTML = `<iframe src="${pdfUrl}#toolbar=0" class="w-full" style="height: 75vh; border: none; border-radius: 0.5rem;"></iframe>`;
+            
+            showPDFViewer();
+        }
+
+        function showPDFViewer() {
+            const modal = document.getElementById('pdf-viewer-modal');
+            modal.classList.remove('hidden');
+            modal.classList.remove('opacity-0');
+            setTimeout(() => {
+                const contentDiv = modal.querySelector('.transform');
+                if(contentDiv) {
+                    contentDiv.classList.remove('scale-95');
+                    contentDiv.classList.add('scale-100');
+                }
+            }, 10);
+        }
+
+        function closePDFViewer() {
+            const modal = document.getElementById('pdf-viewer-modal');
+            modal.querySelector('.transform').classList.add('scale-95');
+            modal.querySelector('.transform').classList.remove('scale-100');
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                document.getElementById('pdf-display-container').innerHTML = '';
+                currentPDFUrl = null;
+            }, 300);
+        }
+
+        function downloadPDF() {
+            if (!currentPDFUrl) {
+                alert('No PDF to download');
+                return;
+            }
+            const a = document.createElement('a');
+            a.href = currentPDFUrl;
+            a.download = currentPDFFilename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function generatePerfectPDF(sourceId, filename, callback, outputType = 'bloburl') {
+            const originalScroll = window.scrollY;
+            window.scrollTo(0, 0);
+
+            let overlay = document.getElementById('pdf-loading-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'pdf-loading-overlay';
+                overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #0f172a; z-index: 999999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-family: sans-serif;';
+                overlay.innerHTML = `
+                    <div style="width: 50px; height: 50px; border: 4px solid #3b82f6; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;"></div>
+                    <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
+                    <h2 style="font-size:1.5rem;font-weight:bold;">Generating High-Quality PDF...</h2>
+                    <p style="color:#94a3b8; margin-top: 10px;">Please wait while we format the document.</p>
+                `;
+                document.body.appendChild(overlay);
+            }
+            overlay.style.display = 'flex';
+
+            setTimeout(() => {
+                const sourceElement = document.getElementById(sourceId);
+                const tempContainer = document.createElement('div');
+                tempContainer.style.cssText = 'position: fixed; top: 0; left: 0; width: 720px; background-color: white; z-index: 999998; padding: 0; margin: 0; display: block; overflow: visible;';
+                
+                const clone = sourceElement.cloneNode(true);
+                clone.id = 'pdf-temp-clone-perfect';
+                clone.style.cssText = 'display: block; width: 720px; margin: 0; padding: 0; opacity: 1; visibility: visible; box-sizing: border-box;';
+                
+                // Apply comprehensive text-wrapping styles to ALL elements recursively
+                const applyTextWrappingStyles = (element) => {
+                    element.style.wordWrap = 'break-word';
+                    element.style.overflowWrap = 'break-word';
+                    element.style.wordBreak = 'break-word';
+                    element.style.whiteSpace = 'normal';
+                    
+                    // Special handling for table cells
+                    if (element.tagName === 'TD' || element.tagName === 'TH') {
+                        element.style.maxWidth = '100%';
+                        element.style.minWidth = '50px';
+                        element.style.hyphens = 'auto';
+                        element.style.wordSpacing = 'normal';
+                    }
+                    
+                    // Recursively apply to children
+                    for (let child of element.children) {
+                        applyTextWrappingStyles(child);
+                    }
+                };
+                
+                applyTextWrappingStyles(clone);
+
+                const wrappers = clone.querySelectorAll('.ja-pdf-wrapper');
+                wrappers.forEach(w => { 
+                    w.style.margin = '0'; 
+                    w.style.padding = '15px 12px';
+                    w.style.width = '100%';
+                    w.style.boxSizing = 'border-box';
+                    w.style.position = 'relative';
+                    w.style.wordWrap = 'break-word';
+                    w.style.overflowWrap = 'break-word';
+                });
+
+                // Ensure div content preserves line breaks and wraps properly
+                const contentDivs = clone.querySelectorAll('#pdf-ja-purpose, #pdf-ja-main-duties, #pdf-ja-tools, #pdf-ja-challenges, #pdf-ja-comments');
+                contentDivs.forEach(div => {
+                    div.style.whiteSpace = 'pre-wrap';
+                    div.style.wordWrap = 'break-word';
+                    div.style.overflowWrap = 'break-word';
+                    div.style.wordBreak = 'break-word';
+                    div.style.display = 'block';
+                    div.style.width = '100%';
+                    div.style.lineHeight = '1.4';
+                    div.style.paddingBottom = '10px';
+                });
+
+                // Constrain tables properly
+                const tables = clone.querySelectorAll('table');
+                tables.forEach(table => {
+                    table.style.tableLayout = 'fixed';
+                    table.style.width = '100%';
+                    table.style.borderCollapse = 'collapse';
+                    table.style.margin = '10px 0';
+                    
+                    // Apply text wrapping to all table cells
+                    const cells = table.querySelectorAll('td, th');
+                    cells.forEach(cell => {
+                        cell.style.wordWrap = 'break-word';
+                        cell.style.overflowWrap = 'break-word';
+                        cell.style.wordBreak = 'break-word';
+                        cell.style.hyphens = 'auto';
+                        cell.style.paddingTop = '6px';
+                        cell.style.paddingBottom = '6px';
+                        cell.style.paddingLeft = '6px';
+                        cell.style.paddingRight = '6px';
+                    });
+                });
+
+                tempContainer.appendChild(clone);
+                document.body.appendChild(tempContainer);
+
+                setTimeout(() => {
+                    const opt = {
+                        margin: [12, 8, 12, 8],
+                        filename: filename,
+                        image: { type: 'jpeg', quality: 1.0 },
+                        html2canvas: { 
+                            scale: 2, 
+                            useCORS: true, 
+                            allowTaint: true, 
+                            windowWidth: 720, 
+                            windowHeight: 1000,
+                            width: 720, 
+                            x: 0, 
+                            y: 0, 
+                            scrollY: 0, 
+                            scrollX: 0, 
+                            backgroundColor: '#ffffff',
+                            onclone: function(clonedDocument) {
+                                // Re-apply all text-wrapping styles in cloned document
+                                const allClonedElements = clonedDocument.querySelectorAll('*');
+                                allClonedElements.forEach(el => {
+                                    el.style.wordWrap = 'break-word';
+                                    el.style.overflowWrap = 'break-word';
+                                    el.style.wordBreak = 'break-word';
+                                    if (el.tagName === 'TD' || el.tagName === 'TH') {
+                                        el.style.hyphens = 'auto';
+                                    }
+                                });
+                            }
+                        },
+                        jsPDF: { 
+                            unit: 'mm', 
+                            format: 'a4', 
+                            orientation: 'portrait',
+                            compress: false
+                        }
+                    };
+
+                    html2pdf().set(opt).from(clone).output(outputType).then(function(result) {
+                        if (document.body.contains(tempContainer)) {
+                            document.body.removeChild(tempContainer);
+                        }
+                        overlay.style.display = 'none';
+                        window.scrollTo(0, originalScroll);
+                        if(callback) callback(result);
+                    }).catch(err => {
+                        console.error('PDF Generation Error:', err);
+                        if (document.body.contains(tempContainer)) {
+                            document.body.removeChild(tempContainer);
+                        }
+                        overlay.style.display = 'none';
+                        window.scrollTo(0, originalScroll);
+                        alert('An error occurred while generating the PDF. Please try again.');
+                    });
+                }, 500); 
+            }, 50);
+        }
+
+        // --- JOB ANALYSIS SCRIPT CAPTURE ---
+        const DB_KEY = 'DOTr_HRDD_DB';
+        let jaUploadedSignature = null;
+
+        function getDB() {
+            const data = localStorage.getItem(DB_KEY);
+            if (!data) return { submitted: 0, applications: [], job_analysis_forms: [] };
+            return JSON.parse(data);
+        }
+
+        function addJADutyRow() {
+            const tbody = document.querySelector('#ja-duties-table tbody');
+            const tr = document.createElement('tr');
+            tr.className = "border-t border-slate-200 dark:border-gray-600";
+            tr.innerHTML = `
+                <td class="p-2"><input type="text" class="ja-duty-input w-full border border-slate-300 dark:border-gray-600 bg-transparent dark:text-white rounded px-2 py-1"></td>
+                <td class="p-2">
+                    <select class="ja-freq-select w-full border border-slate-300 dark:border-gray-600 rounded px-2 py-1 bg-transparent dark:bg-gray-800 dark:text-white">
+                        <option value="Daily">Daily</option><option value="Weekly">Weekly</option><option value="Monthly">Monthly</option><option value="Quarterly">Quarterly</option><option value="Periodically/As indicated">Periodically/As indicated</option>
+                    </select>
+                </td>
+                <td class="p-2 text-center"><button type="button" onclick="this.closest('tr').remove()" class="text-red-500 font-bold hover:text-red-700">X</button></td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        function addJASkillRow() {
+            const tbody = document.querySelector('#ja-skills-table tbody');
+            const tr = document.createElement('tr');
+            tr.className = "border-t border-slate-200 dark:border-gray-600";
+            tr.innerHTML = `
+                <td class="p-2"><input type="text" class="ja-skill-input w-full border border-slate-300 dark:border-gray-600 bg-transparent dark:text-white rounded px-2 py-1"></td>
+                <td class="p-2">
+                    <select class="ja-level-select w-full border border-slate-300 dark:border-gray-600 rounded px-2 py-1 bg-transparent dark:bg-gray-800 dark:text-white">
+                        <option value="Basic">Basic</option><option value="Intermediate">Intermediate</option><option value="Advance">Advance</option><option value="Superior">Superior</option>
+                    </select>
+                </td>
+                <td class="p-2 text-center"><button type="button" onclick="this.closest('tr').remove()" class="text-red-500 font-bold hover:text-red-700">X</button></td>
+            `;
+            tbody.appendChild(tr);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const jaDropZone = document.getElementById('ja-drop-zone');
+            const jaFileInput = document.getElementById('ja-file-upload');
+            const jaFileList = document.getElementById('ja-file-list');
+
+            if(jaDropZone && jaFileInput) {
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    jaDropZone.addEventListener(eventName, preventDefaults, false);
+                });
+                function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
+                
+                jaDropZone.addEventListener('drop', (e) => handleJaFiles(e.dataTransfer.files));
+                jaFileInput.addEventListener('change', (e) => handleJaFiles(e.target.files));
+
+                function handleJaFiles(files) {
+                    jaFileList.innerHTML = '';
+                    [...files].forEach(file => {
+                        if (file.type.startsWith('image/')) {
+                            const reader = new FileReader();
+                            reader.onload = (e) => jaUploadedSignature = e.target.result; 
+                            reader.readAsDataURL(file);
+                            addJaFileToList(file);
+                        } else {
+                            alert("Please upload a valid image file for your signature.");
+                        }
+                    });
+                }
+                function addJaFileToList(file) {
+                    const li = document.createElement('li');
+                    li.className = 'flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl shadow-sm';
+                    li.innerHTML = `<div class="font-semibold text-slate-700 text-sm">${file.name}</div>
+                        <button type="button" class="text-red-500" onclick="removeJaFile(this)">X</button>`;
+                    jaFileList.appendChild(li);
+                }
+                window.removeJaFile = function(btn) {
+                    btn.parentElement.remove();
+                    jaUploadedSignature = null; 
+                    jaFileInput.value = '';
+                };
+            }
+        });
+
+        function generateJobAnalysisPDF() {
+            // Reconstruct full name
+            const firstName = document.getElementById('ja-firstname').value.trim();
+            const middleName = document.getElementById('ja-middlename').value.trim();
+            const surname = document.getElementById('ja-surname').value.trim();
+            const fullName = `${firstName} ${middleName ? middleName + ' ' : ''}${surname}`.trim();
+
+            // Populate basic fields with proper text handling
+            document.getElementById('pdf-ja-fullname').textContent = fullName;
+            document.getElementById('pdf-ja-position').textContent = document.getElementById('ja-position').value;
+            document.getElementById('pdf-ja-office').textContent = document.getElementById('ja-office').value;
+            document.getElementById('pdf-ja-section').textContent = document.getElementById('ja-section').value;
+            document.getElementById('pdf-ja-alternate').textContent = document.getElementById('ja-alternate').value;
+            
+            // Populate text areas with proper formatting and line break preservation
+            const purposeDiv = document.getElementById('pdf-ja-purpose');
+            purposeDiv.textContent = document.getElementById('ja-purpose').value || '(No content provided)';
+            purposeDiv.style.whiteSpace = 'pre-wrap';
+            purposeDiv.style.wordWrap = 'break-word';
+            
+            const mainDutiesDiv = document.getElementById('pdf-ja-main-duties');
+            mainDutiesDiv.textContent = document.getElementById('ja-main-duties').value || '(No content provided)';
+            mainDutiesDiv.style.whiteSpace = 'pre-wrap';
+            mainDutiesDiv.style.wordWrap = 'break-word';
+            
+            const toolsDiv = document.getElementById('pdf-ja-tools');
+            toolsDiv.textContent = document.getElementById('ja-tools').value || '(No content provided)';
+            toolsDiv.style.whiteSpace = 'pre-wrap';
+            toolsDiv.style.wordWrap = 'break-word';
+            
+            const challengesDiv = document.getElementById('pdf-ja-challenges');
+            challengesDiv.textContent = document.getElementById('ja-challenges').value || '(No content provided)';
+            challengesDiv.style.whiteSpace = 'pre-wrap';
+            challengesDiv.style.wordWrap = 'break-word';
+            
+            const commentsDiv = document.getElementById('pdf-ja-comments');
+            commentsDiv.textContent = document.getElementById('ja-comments').value || '(No content provided)';
+            commentsDiv.style.whiteSpace = 'pre-wrap';
+            commentsDiv.style.wordWrap = 'break-word';
+
+            // Map Tables with proper escaping
+            const dutiesBodyPdf = document.getElementById('pdf-ja-duties-body');
+            dutiesBodyPdf.innerHTML = ''; 
+            let dutyRowNum = 1;
+            document.querySelectorAll('#ja-duties-table tbody tr').forEach((row) => {
+                const dutyText = row.querySelector('.ja-duty-input').value.trim();
+                const freqText = row.querySelector('.ja-freq-select').value;
+                if (dutyText) {
+                    const tr = document.createElement('tr');
+                    tr.style.pageBreakInside = 'avoid';
+                    
+                    const numCell = document.createElement('td');
+                    numCell.className = 'center';
+                    numCell.textContent = dutyRowNum;
+                    
+                    const taskCell = document.createElement('td');
+                    taskCell.style.wordWrap = 'break-word';
+                    taskCell.style.overflowWrap = 'break-word';
+                    const p = document.createElement('p');
+                    p.textContent = dutyText;
+                    p.style.margin = '0';
+                    p.style.fontFamily = "'Book Antiqua', serif";
+                    p.style.fontSize = '10pt';
+                    taskCell.appendChild(p);
+                    
+                    const dailyCell = document.createElement('td');
+                    dailyCell.className = 'center checkbox-cell';
+                    dailyCell.textContent = freqText === 'Daily' ? 'X' : '';
+                    
+                    const weeklyCell = document.createElement('td');
+                    weeklyCell.className = 'center checkbox-cell';
+                    weeklyCell.textContent = freqText === 'Weekly' ? 'X' : '';
+                    
+                    const monthlyCell = document.createElement('td');
+                    monthlyCell.className = 'center checkbox-cell';
+                    monthlyCell.textContent = freqText === 'Monthly' ? 'X' : '';
+                    
+                    const quarterlyCell = document.createElement('td');
+                    quarterlyCell.className = 'center checkbox-cell';
+                    quarterlyCell.textContent = freqText === 'Quarterly' ? 'X' : '';
+                    
+                    const periodicCell = document.createElement('td');
+                    periodicCell.className = 'center checkbox-cell';
+                    periodicCell.textContent = freqText === 'Periodically/As indicated' ? 'X' : '';
+                    
+                    tr.appendChild(numCell);
+                    tr.appendChild(taskCell);
+                    tr.appendChild(dailyCell);
+                    tr.appendChild(weeklyCell);
+                    tr.appendChild(monthlyCell);
+                    tr.appendChild(quarterlyCell);
+                    tr.appendChild(periodicCell);
+                    
+                    dutiesBodyPdf.appendChild(tr);
+                    dutyRowNum++;
+                }
+            });
+
+            // If no duties added, show placeholder
+            if (dutyRowNum === 1) {
+                const tr = document.createElement('tr');
+                const td = document.createElement('td');
+                td.colSpan = 7;
+                td.textContent = 'No secondary duties added';
+                td.style.textAlign = 'center';
+                td.style.fontStyle = 'italic';
+                td.style.color = '#999';
+                tr.appendChild(td);
+                dutiesBodyPdf.appendChild(tr);
+            }
+
+            // Map Skills Table
+            const skillsBodyPdf = document.getElementById('pdf-ja-skills-body');
+            skillsBodyPdf.innerHTML = ''; 
+            let skillRowNum = 1;
+            document.querySelectorAll('#ja-skills-table tbody tr').forEach((row) => {
+                const skillText = row.querySelector('.ja-skill-input').value.trim();
+                const levelText = row.querySelector('.ja-level-select').value;
+                if (skillText) {
+                    const tr = document.createElement('tr');
+                    tr.style.pageBreakInside = 'avoid';
+                    
+                    const numCell = document.createElement('td');
+                    numCell.className = 'center';
+                    numCell.textContent = skillRowNum;
+                    
+                    const skillCell = document.createElement('td');
+                    skillCell.style.wordWrap = 'break-word';
+                    skillCell.style.overflowWrap = 'break-word';
+                    const p = document.createElement('p');
+                    p.textContent = skillText;
+                    p.style.margin = '0';
+                    p.style.fontFamily = "'Book Antiqua', serif";
+                    p.style.fontSize = '10pt';
+                    skillCell.appendChild(p);
+                    
+                    const basicCell = document.createElement('td');
+                    basicCell.className = 'center checkbox-cell';
+                    basicCell.textContent = levelText === 'Basic' ? 'X' : '';
+                    
+                    const intermediateCell = document.createElement('td');
+                    intermediateCell.className = 'center checkbox-cell';
+                    intermediateCell.textContent = levelText === 'Intermediate' ? 'X' : '';
+                    
+                    const advanceCell = document.createElement('td');
+                    advanceCell.className = 'center checkbox-cell';
+                    advanceCell.textContent = levelText === 'Advance' ? 'X' : '';
+                    
+                    const superiorCell = document.createElement('td');
+                    superiorCell.className = 'center checkbox-cell';
+                    superiorCell.textContent = levelText === 'Superior' ? 'X' : '';
+                    
+                    tr.appendChild(numCell);
+                    tr.appendChild(skillCell);
+                    tr.appendChild(basicCell);
+                    tr.appendChild(intermediateCell);
+                    tr.appendChild(advanceCell);
+                    tr.appendChild(superiorCell);
+                    
+                    skillsBodyPdf.appendChild(tr);
+                    skillRowNum++;
+                }
+            });
+
+            // If no skills added, show placeholder
+            if (skillRowNum === 1) {
+                const tr = document.createElement('tr');
+                const td = document.createElement('td');
+                td.colSpan = 6;
+                td.textContent = 'No skills/competencies added';
+                td.style.textAlign = 'center';
+                td.style.fontStyle = 'italic';
+                td.style.color = '#999';
+                tr.appendChild(td);
+                skillsBodyPdf.appendChild(tr);
+            }
+
+            // Handle signature
+            const jaSigImg = document.getElementById('pdf-ja-signature-preview');
+            if (jaUploadedSignature) { 
+                jaSigImg.src = jaUploadedSignature; 
+                jaSigImg.style.display = 'block'; 
+            } else { 
+                jaSigImg.style.display = 'none'; 
+            }
+
+            // Add date
+            const today = new Date();
+            const dateElement = document.getElementById('pdf-ja-date');
+            if(dateElement) dateElement.textContent = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+            // Save to database
+            const db = getDB();
+            if (!db.job_analysis_forms) db.job_analysis_forms = [];
+            
+            db.job_analysis_forms.push({
+                id: 'ja_' + Date.now(), 
+                fullname: fullName,
+                position: document.getElementById('ja-position').value, 
+                date_submitted: new Date().toLocaleDateString('en-US'), 
+                status: 'Pending'
+            });
+            localStorage.setItem(DB_KEY, JSON.stringify(db));
+            
+            // Generate PDF and open modal
+            const cleanName = fullName.replace(/\s+/g, '_') || 'Employee';
+            generatePerfectPDF('pdf-ja-content', `Job_Analysis_Form_${cleanName}.pdf`, function(pdfUrl) {
+                document.getElementById('jobAnalysisForm').reset();
+                jaUploadedSignature = null;
+                document.getElementById('ja-file-list').innerHTML = '';
+                
+                openPDFInModal(pdfUrl, 'Job Analysis Form Preview', `Job_Analysis_Form_${cleanName}.pdf`);
+            }, 'bloburl');
+        }
+
+    </script>
+</body>
+</html>

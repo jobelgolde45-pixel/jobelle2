@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en" class="h-full bg-[#f8fafc]">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOTr Portals - Unified Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            blue: '#0b3d91',
+                            bluelight: '#1a56b8',
+                            dark: '#0f172a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { box-sizing: border-box; }
+        
+        /* Slide Animation for the Toggle panels */
+        .fade-in-slide {
+            animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        /* Input Focus Glow */
+        .input-glow:focus {
+            box-shadow: 0 0 0 4px rgba(26, 86, 184, 0.1);
+        }
+    </style>
+</head>
+<body class="h-full m-0 p-0 font-sans text-gray-800" oncontextmenu="return false;">
+
+    <div class="h-full w-full flex items-center justify-center p-0 md:p-6 lg:p-10 bg-gradient-to-br from-slate-100 to-slate-200">
+        
+        <div class="h-full w-full max-w-[1400px] flex flex-col md:flex-row bg-white md:rounded-2xl shadow-2xl overflow-hidden relative border border-slate-200/60">
+            
+            <div id="learnPanel" class="hidden md:flex flex-col md:w-1/2 lg:w-3/5 h-full relative overflow-hidden transition-all duration-500 bg-brand-dark">
+                
+                <img src="login.png" alt="DOTr Building" class="absolute inset-0 w-full h-full object-cover z-0">
+                
+                <div class="absolute inset-0 z-1 bg-gradient-to-t from-[#0b3d91] via-[#0b3d91]/80 to-transparent h-full w-full"></div>
+                
+                <div class="relative z-10 w-full h-full flex flex-col justify-end p-10 lg:p-16 text-left text-white">
+                    <h1 class="text-4xl lg:text-6xl font-extrabold font-display leading-tight tracking-tight mb-4">
+                        Welcome to the<br><span class="text-blue-300">HRDD Portal</span>
+                    </h1>
+                    
+                    <p class="text-white/80 text-lg font-light leading-relaxed max-w-xl mb-8">
+                        The HRDD portal is a comprehensive centralized hub providing seamless access to the complete catalog of training programs and developmental processes offered by the HRDD Learning and Development unit.
+                    </p>
+                    
+                    <div>
+                        <button id="learnBtn" class="group bg-white text-brand-blue hover:bg-gray-50 font-bold py-3.5 px-8 rounded-xl transition-all shadow-xl hover:shadow-2xl transform hover:-translate-y-1 flex items-center gap-3 w-max">
+                            Explore Services
+                            <i class="fa-solid fa-arrow-right transform group-hover:translate-x-1 transition-transform"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+                
+            <div id="loginDiv" class="flex flex-col flex-1 relative fade-in-slide">
+                
+                <div class="w-full max-w-md mx-auto mt-6 md:mt-10 lg:mt-16 mb-24 px-8 md:px-12 space-y-2">
+                    
+                    <div class="text-center space-y-2">
+                        <div class="w-28 h-28 mx-auto flex items-center justify-center mb-6">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Department_of_Transportation_%28Philippines%29.svg/330px-Department_of_Transportation_%28Philippines%29.svg.png" alt="DOTr Logo" class="w-full h-full object-contain drop-shadow-md">
+                        </div>
+                        <h2 class="text-3xl md:text-4xl font-bold font-sans text-brand-dark tracking-tight">HRDD Portal Sign in</h2>
+                        <p class="text-slate-500 text-base font-medium mt-2">Enter your credentials to access your dashboard</p>
+                    </div>
+
+                    <form id="LoginForm" name="LoginForm" method="POST" class="space-y-6" autocomplete="off">
+                        <input type="hidden" name="csrfmiddlewaretoken" value="TAGfo6dwVmSRhJttJcICnWT08Kq7bjIEqHJnB85Hv8mczfdMp7AhSNjW62tFB5Nn">
+                        
+                        <div class="space-y-1.5 text-left">
+                            <label class="block text-sm font-semibold text-gray-700">Username</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <i class="fa-regular fa-user text-gray-400"></i>
+                                </div>
+                                <input type="text" name="username" id="username" required placeholder="Enter Username" 
+                                    class="input-glow block w-full pl-11 pr-4 py-4 border border-gray-200 rounded-xl bg-slate-50 focus:bg-white focus:border-brand-bluelight focus:outline-none transition-all placeholder:text-gray-400 text-gray-900 font-medium">
+                            </div>
+                        </div>
+
+                        <div class="space-y-1.5 text-left">
+                            <label class="block text-sm font-semibold text-gray-700">Password</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <i class="fa-solid fa-lock text-gray-400"></i>
+                                </div>
+                                <input type="password" name="password" id="password" required placeholder="••••••••" 
+                                    class="input-glow block w-full pl-11 pr-4 py-4 border border-gray-200 rounded-xl bg-slate-50 focus:bg-white focus:border-brand-bluelight focus:outline-none transition-all placeholder:text-gray-400 text-gray-900 font-medium">
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn-login w-full bg-brand-blue hover:bg-brand-bluelight text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-base flex justify-center items-center gap-2 mt-4">
+                            Sign In <i class="fas fa-sign-in-alt ml-1"></i>
+                        </button>
+                    </form>
+                </div>
+
+                <div class="absolute bottom-8 left-0 right-0 text-center">
+                </div>
+
+            </div>
+
+            <div id="infoDiv" class="hidden flex-col justify-center min-h-full p-8 md:p-12 lg:p-14 bg-white">
+                <div class="w-full">
+                    <div class="flex items-center justify-between mb-8 pb-4 border-b border-slate-100">
+                        <h2 class="text-2xl font-extrabold font-display text-gray-900">Portal Services</h2>
+                        <button id="signInBtn" class="text-sm font-bold text-brand-bluelight hover:text-brand-blue bg-blue-50 hover:bg-blue-100 px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2">
+                            <i class="fa-solid fa-arrow-left"></i> Back
+                        </button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-5 p-5 border border-slate-200 hover:border-brand-bluelight hover:shadow-md bg-white rounded-2xl transition-all group">
+                            <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-brand-bluelight flex-shrink-0 group-hover:bg-brand-bluelight group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-chart-line text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold font-display text-gray-900 text-base">IPAR</h4>
+                                <p class="text-sm text-gray-500 mt-1.5 leading-relaxed">A performance management module for documenting, tracking, and assessing individual accomplishments and targets.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-5 p-5 border border-slate-200 hover:border-brand-bluelight hover:shadow-md bg-white rounded-2xl transition-all group">
+                            <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-brand-bluelight flex-shrink-0 group-hover:bg-brand-bluelight group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-file-signature text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold font-display text-gray-900 text-base">PNPKI Application</h4>
+                                <p class="text-sm text-gray-500 mt-1.5 leading-relaxed">A secure gateway for managing PNPKI digital certificates, ensuring trusted transactions and authentication.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-5 p-5 border border-slate-200 hover:border-brand-bluelight hover:shadow-md bg-white rounded-2xl transition-all group">
+                            <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-brand-bluelight flex-shrink-0 group-hover:bg-brand-bluelight group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-shield-halved text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold font-display text-gray-900 text-base">CyberSecurity Response</h4>
+                                <p class="text-sm text-gray-500 mt-1.5 leading-relaxed">A centralized platform for ticketing and monitoring cybersecurity incidents, strengthening organizational security posture.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-5 p-5 border border-slate-200 hover:border-brand-bluelight hover:shadow-md bg-white rounded-2xl transition-all group">
+                            <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-brand-bluelight flex-shrink-0 group-hover:bg-brand-bluelight group-hover:text-white transition-colors">
+                                <i class="fa-solid fa-diagram-project text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold font-display text-gray-900 text-base">ISSP</h4>
+                                <p class="text-sm text-gray-500 mt-1.5 leading-relaxed">A strategic tool for planning, implementing, and monitoring IT projects and compliance initiatives across the organization.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const learnBtn = document.getElementById('learnBtn');
+            const signInBtn = document.getElementById('signInBtn');
+            const infoDiv = document.getElementById('infoDiv');
+            const loginDiv = document.getElementById('loginDiv');
+
+            // Click Explore Services -> Hide Login, Show Info
+            learnBtn.addEventListener('click', () => {
+                loginDiv.classList.add('hidden');
+                loginDiv.classList.remove('fade-in-slide');
+                
+                infoDiv.classList.remove('hidden');
+                infoDiv.classList.add('flex', 'fade-in-slide');
+            });
+
+            // Click Back -> Hide Info, Show Login
+            signInBtn.addEventListener('click', () => {
+                infoDiv.classList.add('hidden');
+                infoDiv.classList.remove('flex', 'fade-in-slide');
+
+                loginDiv.classList.remove('hidden');
+                loginDiv.classList.add('flex', 'fade-in-slide');
+            });
+
+            // Demo Login logic to replicate your functionality test visually
+            const loginForm = document.getElementById('LoginForm');
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const btn = document.querySelector('.btn-login');
+                const icon = btn.querySelector('i.fa-sign-in-alt');
+                
+                // Simulate loading state
+                if(icon) {
+                    icon.classList.remove('fa-sign-in-alt');
+                    icon.classList.add('fa-spinner', 'fa-spin');
+                }
+                btn.classList.add('opacity-75', 'cursor-not-allowed');
+
+                setTimeout(() => {
+                    // Redirect simulation logic based on username
+                    const user = document.getElementById('username').value.toLowerCase();
+                    if (user.includes('admin')) window.location.href = 'hrdd22.html';
+                    else if (user.includes('super')) window.location.href = 'supervisor22.html';
+                    else window.location.href = 'userportal2.0.html';
+                }, 1000); 
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Analysis Form - DOTr</title>
+<style>
+    /* Page Setup */
+    @page {
+        size: A4;
+        margin: 0.5in;
+    }
+    body {
+        font-family: "Book Antiqua", "Times New Roman", serif;
+        font-size: 11pt;
+        margin: 20px;
+        color: black;
+        background: white;
+    }
+    
+    /* Container to control width */
+    .container {
+        width: 100%;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    /* General Table Styling - ZERO SPACING */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        border-spacing: 0;
+        margin: 0;
+        padding: 0;
+        table-layout: fixed; /* Ensures column consistency */
+    }
+    
+    /* Cell Styling */
+    td, th {
+        border: 1px solid black;
+        padding: 4px 5px;
+        vertical-align: top;
+        font-size: 10pt;
+    }
+
+    /* Remove double borders between stacked tables */
+    table + table {
+        margin-top: -1px;
+    }
+
+    /* Header Specifics */
+    .header-container {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 5px;
+    }
+    .header-text p {
+        margin: 0;
+        line-height: 1.2;
+    }
+    .header-title {
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 12pt;
+    }
+
+    /* Text Utility Classes */
+    p { margin: 0; line-height: 1.1; margin-bottom: 2px; }
+    .center { text-align: center; }
+    .bold { font-weight: bold; }
+    .italic { font-style: italic; }
+    .justify { text-align: justify; }
+    
+    /* Background Colors */
+    .bg-blue-light { background-color: #A6C9EC; } /* Header Title */
+    .bg-blue-pale { background-color: #DAE9F8; }  /* Section Headers */
+    .bg-gray { background-color: #F2F2F2; }       /* Instructions */
+    
+    /* Input Fields styling */
+    input[type="text"] {
+        width: 100%;
+        border: none;
+        background: transparent;
+        font-family: inherit;
+        font-size: inherit;
+        outline: none;
+    }
+    
+    /* List Styling */
+    ul { margin: 2px 0 2px 15px; padding: 0; }
+    li { margin-bottom: 0; }
+
+    /* Checkbox Alignment */
+    .checkbox-cell { text-align: center; vertical-align: middle; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <table>
+        <tr>
+            <td style="border-bottom: none;">
+                <div class="header-container">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Department_of_Transportation_%28Philippines%29.svg/330px-Department_of_Transportation_%28Philippines%29.svg.png" width="70" alt="DOTr">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Bagong_Pilipinas_logo.png" width="80" alt="Bagong Pilipinas">
+                    
+                    <div class="header-text">
+                        <p>Republic of the Philippines</p>
+                        <p class="bold">DEPARTMENT OF TRANSPORTATION</p>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <table>
+        <tr>
+            <td class="bg-blue-light center" style="padding: 5px;">
+                <p class="bold" style="font-size: 14pt; margin:0;">JOB ANALYSIS FORM</p>
+            </td>
+        </tr>
+    </table>
+
+    <table>
+        <tr>
+            <td>
+                <p class="bold" style="margin-top: 5px;">Introduction</p>
+                <p class="justify" style="margin-bottom: 8px;">This form is intended to gather comprehensive information on the job roles, responsibilities, and required competencies of employees within a specific office, service, or division. The data collected will primarily support competency framework validation and also serve as a reference for other human resource functions such as workforce planning, training needs analysis, and performance management.</p>
+                
+                <p class="bold">Objectives</p>
+                <ul>
+                    <li>Document the main and secondary responsibilities of each position.</li>
+                    <li>Identify skills and proficiency levels required for effective performance.</li>
+                    <li>Provide a basis for competency gap analysis and targeted development programs.</li>
+                    <li>Ensure alignment between job roles and organizational objectives.</li>
+                </ul>
+            </td>
+        </tr>
+    </table>
+
+    <table>
+        <tr>
+            <td class="bg-gray">
+                <p style="font-size: 9pt;">PLEASE BE ADVISED THAT THE DEFINITIONS OF SPECIFIC TERMS AND INSTRUCTIONS OF THIS FORM ARE PROVIDED FOR YOUR REFERENCE ON THE OTHER SHEET. YOU MAY ALSO INCORPORATE ADDITIONAL ROWS BEYOND THE PROVIDED MINIMUM.</p>
+            </td>
+        </tr>
+    </table>
+
+    <table>
+        <colgroup>
+            <col style="width: 25%;">
+            <col style="width: 75%;">
+        </colgroup>
+        <tr>
+            <td><span class="bold">Full Name:</span></td>
+            <td><input type="text"></td>
+        </tr>
+        <tr>
+            <td><span class="bold">Position Title:</span></td>
+            <td><input type="text"></td>
+        </tr>
+        <tr>
+            <td><span class="bold">Office/Service/Division:</span></td>
+            <td><input type="text"></td>
+        </tr>
+        <tr>
+            <td><span class="bold">Section/Project/Unit:</span></td>
+            <td><input type="text"></td>
+        </tr>
+        <tr>
+            <td><span class="bold">Alternate Position:</span></td>
+            <td><input type="text"></td>
+        </tr>
+    </table>
+
+    <table>
+        <tr>
+            <td class="bg-blue-pale center" style="border-bottom: 3px double black; padding: 5px;">
+                <p class="bold">JOB PURPOSE</p>
+                <p class="italic" style="font-size: 9pt;">(Brief Description of the general function and purpose of the position.)</p>
+            </td>
+        </tr>
+        <tr>
+            <td style="height: 60px;"></td>
+        </tr>
+    </table>
+
+    <table>
+        <tr>
+            <td class="bg-blue-pale center">
+                <p class="bold">MAIN DUTIES AND RESPONSIBILITIES</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="bg-gray">
+                <p class="justify">This section provides a detailed outline of the primary tasks, functions, and obligations associated with the position. It defines the key activities that the employee is expected to perform to achieve the objectives of the role. These responsibilities should be specific, measurable, and aligned with the overall goals of the organization.</p>
+            </td>
+        </tr>
+        <tr>
+            <td style="height: 150px;"></td>
+        </tr>
+    </table>
+
+    <table>
+        <tr>
+            <td class="bg-blue-pale center">
+                <p class="bold">SECONDARY DUTIES & RESPONSIBILITIES</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="bg-gray">
+                <p class="justify">This section lists additional duties that support the main responsibilities of the position. These tasks are not the primary focus of the role but are necessary to ensure smooth operations and assist in achieving departmental or organizational objectives. They may include occasional assignments, administrative support, or other related activities as required.</p>
+            </td>
+        </tr>
+    </table>
+
+    <table>
+        <colgroup>
+            <col style="width: 5%;">
+            <col style="width: 45%;">
+            <col style="width: 10%;">
+            <col style="width: 10%;">
+            <col style="width: 10%;">
+            <col style="width: 10%;">
+            <col style="width: 10%;">
+        </colgroup>
+        <tr>
+            <td rowspan="2" class="center bold">NO.</td>
+            <td rowspan="2" class="center bold">TASKS</td>
+            <td colspan="5" class="center bold">FREQUENCY OF TASKS</td>
+        </tr>
+        <tr>
+            <td class="center bold" style="font-size: 8pt;">Daily</td>
+            <td class="center bold" style="font-size: 8pt;">Weekly</td>
+            <td class="center bold" style="font-size: 8pt;">Monthly</td>
+            <td class="center bold" style="font-size: 8pt;">Quarterly</td>
+            <td class="center bold" style="font-size: 8pt;">Periodically / As Instructed</td>
+        </tr>
+        <script>
+            for(let i=1; i<=10; i++) {
+                document.write(`
+                <tr>
+                    <td class="center">${i}</td>
+                    <td><input type="text"></td>
+                    <td class="checkbox-cell"><input type="checkbox"></td>
+                    <td class="checkbox-cell"><input type="checkbox"></td>
+                    <td class="checkbox-cell"><input type="checkbox"></td>
+                    <td class="checkbox-cell"><input type="checkbox"></td>
+                    <td class="checkbox-cell"><input type="checkbox"></td>
+                </tr>
+                `);
+            }
+        </script>
+    </table>
+
+    <table>
+        <tr>
+            <td class="bg-blue-pale center">
+                <p class="bold">REQUIRED COMPETENCIES</p>
+            </td>
+        </tr>
+        <tr>
+            <td class="bg-gray">
+                <p class="justify">This outlines the fundamental abilities, knowledge, and competencies required to perform the duties of the position effectively. These skills are critical for achieving job objectives and ensuring successful performance. Typically, it includes technical, behavioral, and leadership/managerial skills (if applicable) necessary for the role. <i>(<b>Note:</b> To be filled by the immediate supervisor)</i></p>
+            </td>
+        </tr>
+    </table>
+
+    <table>
+        <colgroup>
+            <col style="width: 5%;">
+            <col style="width: 45%;">
+            <col style="width: 12.5%;">
+            <col style="width: 12.5%;">
+            <col style="width: 12.5%;">
+            <col style="width: 12.5%;">
+        </colgroup>
+        <tr>
+            <td rowspan="2" class="center bold">NO.</td>
+            <td rowspan="2" class="center bold">SKILLS</td>
+            <td colspan="4" class="center bold">PROFICIENCY LEVEL</td>
+        </tr>
+        <tr>
+            <td class="center bold" style="font-size: 8pt;">BASIC</td>
+            <td class="center bold" style="font-size: 8pt;">INTERMEDIATE</td>
+            <td class="center bold" style="font-size: 8pt;">ADVANCED</td>
+            <td class="center bold" style="font-size: 8pt;">SUPERIOR</td>
+        </tr>
+        <script>
+            for(let i=1; i<=10; i++) {
+                document.write(`
+                <tr>
+                    <td class="center">${i}</td>
+                    <td><input type="text"></td>
+                    <td class="checkbox-cell"><input type="checkbox"></td>
+                    <td class="checkbox-cell"><input type="checkbox"></td>
+                    <td class="checkbox-cell"><input type="checkbox"></td>
+                    <td class="checkbox-cell"><input type="checkbox"></td>
+                </tr>
+                `);
+            }
+        </script>
+    </table>
+
+    <table>
+        <colgroup>
+            <col style="width: 5%;">
+            <col style="width: 95%;">
+        </colgroup>
+        <tr>
+            <td colspan="2" class="bg-blue-pale center">
+                <p class="bold">TOOLS AND EQUIPMENT</p>
+                <p class="italic" style="font-size: 9pt;">List any tools, equipment, or software regularly used.</p>
+            </td>
+        </tr>
+        <script>
+            for(let i=1; i<=5; i++) {
+                document.write(`
+                <tr>
+                    <td class="center">${i}</td>
+                    <td><input type="text"></td>
+                </tr>
+                `);
+            }
+        </script>
+    </table>
+
+    <table>
+        <tr>
+            <td class="bg-blue-pale center">
+                <p class="bold">CHALLENGES AND CRITICAL ISSUES</p>
+                <p class="italic" style="font-size: 9pt;">What are the most challenging aspects of this job?</p>
+            </td>
+        </tr>
+        <tr>
+            <td style="height: 60px;"></td>
+        </tr>
+    </table>
+
+    <table>
+        <tr>
+            <td class="bg-blue-pale center">
+                <p class="bold">ADDITIONAL COMMENTS</p>
+            </td>
+        </tr>
+        <tr>
+            <td style="height: 60px;"></td>
+        </tr>
+        <tr>
+            <td style="border-top: none; font-size: 8pt;">Note: You may incorporate additional rows beyond the provided minimum.</td>
+        </tr>
+    </table>
+
+    <table>
+        <tr>
+            <td style="padding: 10px;">
+                <p class="justify" style="margin-bottom: 20px;">I hereby certify that all information and statements provided herewith are accurate. I further attest that these details truthfully reflect my current knowledge and understanding.</p>
+                
+                <p>Signature: _______________________________________</p>
+                <p>Date: _______________________________________</p>
+            </td>
+        </tr>
+    </table>
+
+</div>
+
+</body>
+</html>

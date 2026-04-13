@@ -1,0 +1,1962 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOTr-HRDD Supervisor Console | TailAdmin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: { brand: { 100: '#dbeafe', 300: '#93c5fd', 500: '#3b82f6', 600: '#2563eb', 800: '#1e40af' } }
+                }
+            }
+        }
+        
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Inter', 'Plus Jakarta Sans', sans-serif; }
+        .font-display { font-family: 'Space Grotesk', sans-serif; }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .custom-scrollbar::-webkit-scrollbar, .custom-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track, .custom-scroll::-webkit-scrollbar-track { background: transparent; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb, .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover, .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .custom-scrollbar { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+        .dark .custom-scrollbar { scrollbar-color: #475569 transparent; }
+        
+        .menu-item { display: flex; width: 100%; align-items: center; gap: 0.75rem; border-radius: 0.5rem; padding: 0.625rem 1rem; font-weight: 500; transition: all 0.2s; }
+        .menu-item-inactive { color: #4b5563; }
+        .menu-item-inactive:hover { background-color: #f3f4f6; color: #111827; }
+        .dark .menu-item-inactive:hover { background-color: rgba(255,255,255,0.05); color: #e5e7eb; }
+        .menu-item-active, .nav-item.active { background-color: #eff6ff !important; color: #3b82f6 !important; font-weight: 600; }
+        .dark .menu-item-active, .dark .nav-item.active { background-color: #1e3a8a !important; color: #60a5fa !important; }
+        
+        .dropdown-open { display: flex !important; animation: dropDownFadeIn 0.2s ease-out; }
+        @keyframes dropDownFadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        #pdf-template-container { position: absolute; top: -9999px; left: -9999px; visibility: hidden; z-index: -1; }
+        .check-mark-slot { display: inline-block; width: 20px; text-align: center; font-weight: bold; }
+        
+        .animate-fade-in-up { animation: fadeInUp 0.3s ease-out; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .opacity-0 { opacity: 0; }
+        .opacity-100 { opacity: 1; }
+        .transition-opacity { transition: opacity 0.3s ease-in-out; }
+        .hidden { display: none !important; }
+
+    </style>
+</head>
+<body class="h-full w-full overflow-hidden text-gray-800 bg-gray-50 dark:bg-gray-900 transition-colors duration-300 relative">
+
+    <div id="offline-overlay" class="fixed inset-0 z-[999999] bg-gray-50 dark:bg-gray-900 hidden flex-col items-center justify-center transition-colors duration-300">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2 font-display">No Internet Connection</h1>
+            <p class="text-gray-500 dark:text-gray-400">Play the DOTr Superhero Transport Game while you wait to reconnect!</p>
+            <p class="text-sm font-bold text-brand-600 dark:text-brand-400 mt-3 animate-pulse uppercase tracking-wider">Press SPACE or TAP screen to Fly</p>
+            <p class="text-xs text-gray-400 mt-1">(Hint: Press Ctrl + Shift + O to close this test mode)</p>
+        </div>
+        <div class="relative w-[600px] max-w-[95%] overflow-hidden border-b-2 border-gray-800 dark:border-gray-200">
+            <canvas id="dinoCanvas" width="600" height="250" class="block bg-transparent mx-auto cursor-pointer"></canvas>
+        </div>
+        <p id="dino-score" class="mt-8 text-2xl font-bold text-gray-800 dark:text-gray-200 font-display tracking-widest">Score: 0</p>
+    </div>
+
+    <div id="pdf-template-container">
+        <div id="pdf-content">
+    <style>
+        .pdf-wrapper {
+            font-family: "Book Antiqua", Georgia, serif;
+            font-size: 10pt;
+            line-height: 1.4;
+            background-color: white;
+            color: black;
+            width: 750px; /* Fixed A4 width for html2pdf */
+            padding: 20px 30px;
+            box-sizing: border-box;
+            margin: 0 auto;
+        }
+        .pdf-wrapper table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+        }
+        .pdf-wrapper th, .pdf-wrapper td {
+            border: 1px solid #000;
+            padding: 5px 6px;
+            vertical-align: top;
+            text-align: left;
+        }
+        .pdf-wrapper .logos { text-align: center; width: 160px; vertical-align: middle; white-space: nowrap; }
+        .pdf-wrapper .logos img { width: 60px; margin: 0 4px; vertical-align: middle; display: inline-block; }
+        .pdf-wrapper .header-text { text-align: left; padding: 10px !important; }
+        .pdf-wrapper .header-text span { font-size: 13pt; display: block; }
+        .pdf-wrapper .header-text strong { font-size: 13pt; }
+        .pdf-wrapper .form-title { font-size: 11pt; font-weight: bold; text-align: center; }
+        .pdf-wrapper .section-header { background-color: #DDD9C3; font-weight: bold; font-size: 10pt; }
+        .pdf-wrapper .instructions { margin-bottom: 10px; font-size: 9pt; }
+        .pdf-wrapper .nested-table { width: auto; margin-top: 5px; margin-bottom: 5px; border: none; }
+        .pdf-wrapper .nested-table td { padding: 2px 6px; border: none; }
+        .pdf-wrapper ol { margin: 0; padding-left: 20px; }
+        .pdf-wrapper .yes-no-list { list-style: none; padding: 0; margin: 0; }
+        .pdf-wrapper .yes-no-list li { margin-bottom: 3px; }
+        .pdf-wrapper .terms-header { background-color: #808080; color: #fff; font-weight: bold; text-align: center; padding: 5px; font-size: 11pt; border: 1px solid #000; margin-top: 20px; margin-bottom: 10px; }
+        .pdf-wrapper .terms-list { margin-top: 0; padding-left: 20px; }
+        .pdf-wrapper .terms-list li { margin-bottom: 8px; text-align: justify; }
+        .pdf-wrapper .sub-list { list-style-type: lower-alpha; padding-left: 20px; }
+        .pdf-wrapper .signature-area { height: 50px; display: flex; justify-content: center; align-items: flex-end; margin-top: 10px; }
+        .pdf-wrapper .signature-area img { max-height: 50px; max-width: 180px; mix-blend-mode: multiply; display: none; }
+        .pdf-wrapper .footnote { font-size: 8pt; margin-top: 20px; }
+        .pdf-wrapper .footnote hr { border: 0; border-top: 1px solid #000; width: 33%; margin-left: 0; margin-bottom: 5px; }
+        .pdf-wrapper .input-line-pdf { border-bottom: 1px solid black; display: inline-block; min-height: 14px; width: 90%; }
+        .pdf-wrapper .check-slot { display: inline-block; width: 15px; text-align: center; font-weight: bold; border-bottom: 1px solid #000; }
+    </style>
+
+    <div class="pdf-wrapper">
+        <table>
+            <tr>
+                <td rowspan="3" class="logos">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Department_of_Transportation_%28Philippines%29.svg/330px-Department_of_Transportation_%28Philippines%29.svg.png" alt="DOTr" crossorigin="anonymous">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Bagong_Pilipinas_logo.png" alt="Bagong Pilipinas" crossorigin="anonymous">
+                </td>
+                <td colspan="3" class="header-text">
+                    <span>Republic of the Philippines</span>
+                    <strong>Department of Transportation</strong>
+                </td>
+            </tr>
+            <tr>
+                <td>Document No:<br>DOTr-HRDD-Forms-001</td>
+                <td>Rev. No.: 005</td>
+                <td>Effective Date: _______ 2025</td>
+            </tr>
+            <tr>
+                <td colspan="3" class="form-title">LEARNING AND DEVELOPMENT NOMINATION FORM</td>
+            </tr>
+        </table>
+
+        <div class="instructions">
+            <strong>INSTRUCTIONS:</strong> This form is used in nominating an employee to attend a Learning & Development Intervention (LDI). Fill out this form and attach the signed and scanned copy in the Online Nomination Form.
+        </div>
+
+        <table>
+            <tr><td colspan="3" class="section-header">I. Training/Program Information</td></tr>
+            <tr>
+                <td colspan="3"><strong>Title of Training/Course:</strong> <span class="input-line-pdf" id="pdf-title" style="width: 80%;"></span></td>
+            </tr>
+            <tr>
+                <td style="width: 50%;"><strong>Date of Training/Course:</strong> <span class="input-line-pdf" id="pdf-date-course" style="width: 50%;"></span></td>
+                <td colspan="2"><strong>Date of Filing:</strong> <span class="input-line-pdf" id="pdf-date-filing" style="width: 60%;"></span></td>
+            </tr>
+            <tr>
+                <td>
+                    <strong>Type of Competency to be Addressed:</strong>
+                    <table class="nested-table">
+                        <tr><td style="width:15px; border:1px solid #000; text-align:center;" id="pdf-comp-core"></td><td>Core Competency</td></tr>
+                        <tr><td style="width:15px; border:1px solid #000; text-align:center;" id="pdf-comp-lead"></td><td>Leadership Competency</td></tr>
+                        <tr><td style="width:15px; border:1px solid #000; text-align:center;" id="pdf-comp-func"></td><td>Functional Competency</td></tr>
+                    </table>
+                </td>
+                <td colspan="2"><strong>Venue:</strong> <span class="input-line-pdf" id="pdf-venue" style="width: 80%;"></span></td>
+            </tr>
+
+            <tr><td colspan="3" class="section-header">II. Participant's Information</td></tr>
+            <tr>
+                <td colspan="2" style="width: 50%;">
+                    <strong>Name of Personnel:</strong> <span class="input-line-pdf" id="pdf-name"></span><br><br>
+                    <strong>ID Number:</strong> <span class="input-line-pdf" id="pdf-id"></span><br><br>
+                    <strong>Email Address:</strong> <span class="input-line-pdf" id="pdf-email"></span>
+                </td>
+                <td><strong>Office/Unit Head:</strong> <span class="input-line-pdf" id="pdf-office" style="width: 95%;"></span></td>
+            </tr>
+            <tr>
+                <td colspan="2"><strong>Position Title:</strong> <span class="input-line-pdf" id="pdf-position"></span></td>
+                <td><strong>Immediate Supervisor:</strong> <span class="input-line-pdf" id="pdf-supervisor" style="width: 95%;"></span></td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <strong>Date Hired:</strong> <span class="input-line-pdf" id="pdf-hired" style="width: 60%;"></span><br><br>
+                    <strong>Status of Employment:</strong> <span class="input-line-pdf" id="pdf-status" style="width: 50%;"></span><br><br>
+                    <strong>Salary Grade:</strong> <span class="input-line-pdf" id="pdf-sg" style="width: 60%;"></span><br><br>
+                    <strong>Yrs./Months in DOTr Service:</strong> <span class="input-line-pdf" id="pdf-service" style="width: 40%;"></span><br><br>
+                    <strong>Contact/Viber Number:</strong> <span class="input-line-pdf" id="pdf-contact" style="width: 50%;"></span><br><br>
+                    <strong>Gender (Optional):</strong> <span class="input-line-pdf" id="pdf-gender" style="width: 50%;"></span>
+                </td>
+                <td>
+                    <strong>Name, Position and Office of the Designated Officer-in-Charge (for SG 24 and up):</strong><br>
+                    <span class="input-line-pdf" id="pdf-oic" style="width: 95%;"></span>
+                </td>
+            </tr>
+
+            <tr><td colspan="3" class="section-header">III. Alternate/Substitute Participant's Information</td></tr>
+            <tr>
+                <td style="width: 50%;">
+                    <strong>Name of Personnel:</strong> <span class="input-line-pdf" id="pdf-asp-name"></span><br><br>
+                    <strong>ID Number:</strong> <span class="input-line-pdf" id="pdf-asp-id"></span><br><br>
+                    <strong>Email Address:</strong> <span class="input-line-pdf" id="pdf-asp-email"></span><br><br>
+                    <strong>Position Title:</strong> <span class="input-line-pdf" id="pdf-asp-position"></span><br><br>
+                    <strong>Date Hired:</strong> <span class="input-line-pdf" id="pdf-asp-hired"></span>
+                </td>
+                <td colspan="2">
+                    <strong>Status of Employment:</strong> <span class="input-line-pdf" id="pdf-asp-status" style="width: 60%;"></span><br><br>
+                    <strong>Salary Grade:</strong> <span class="input-line-pdf" id="pdf-asp-sg" style="width: 70%;"></span><br><br>
+                    <strong>Yrs./Months in DOTr Service:</strong> <span class="input-line-pdf" id="pdf-asp-service" style="width: 40%;"></span><br><br>
+                    <strong>Contact/Viber Number:</strong> <span class="input-line-pdf" id="pdf-asp-contact" style="width: 50%;"></span><br><br>
+                    <strong>Gender (Optional):</strong> <span class="input-line-pdf" id="pdf-asp-gender" style="width: 60%;"></span>
+                </td>
+            </tr>
+
+            <tr><td colspan="3" class="section-header">IV. Justification of Nominee’s Attendance</td></tr>
+            <tr><td colspan="3"><div id="pdf-justification" style="min-height: 50px; text-align: justify;"></div></td></tr>
+
+            <tr><td colspan="3" class="section-header">V. Gender Equality, Disability and Social Inclusion (GEDSI)</td></tr>
+            <tr>
+                <td colspan="2">
+                    <ol>
+                        <li>Do you have mobility problems? Like difficulty in walking and/or climbing stairs?</li>
+                        <li>Are you having an emotional/behavioural problem?</li>
+                        <li>Do you have difficulty in reading and identifying speech sounds?</li>
+                        <li>Do you have difficulty communicating?</li>
+                        <li>Do you have difficulty remembering or concentrating?</li>
+                        <li>Do you have difficulty in doing simple arithmetic calculations?</li>
+                        <li>Do you have difficulty in reading even with corrective lenses?</li>
+                        <li>Do you have any difficulty in hearing?</li>
+                    </ol>
+                </td>
+                <td>
+                    <ul class="yes-no-list">
+                        <li><span id="pdf-g1-y" class="check-slot"></span> Yes &nbsp;&nbsp; <span id="pdf-g1-n" class="check-slot"></span> No</li>
+                        <li><span id="pdf-g2-y" class="check-slot"></span> Yes &nbsp;&nbsp; <span id="pdf-g2-n" class="check-slot"></span> No</li>
+                        <li><span id="pdf-g3-y" class="check-slot"></span> Yes &nbsp;&nbsp; <span id="pdf-g3-n" class="check-slot"></span> No</li>
+                        <li><span id="pdf-g4-y" class="check-slot"></span> Yes &nbsp;&nbsp; <span id="pdf-g4-n" class="check-slot"></span> No</li>
+                        <li><span id="pdf-g5-y" class="check-slot"></span> Yes &nbsp;&nbsp; <span id="pdf-g5-n" class="check-slot"></span> No</li>
+                        <li><span id="pdf-g6-y" class="check-slot"></span> Yes &nbsp;&nbsp; <span id="pdf-g6-n" class="check-slot"></span> No</li>
+                        <li><span id="pdf-g7-y" class="check-slot"></span> Yes &nbsp;&nbsp; <span id="pdf-g7-n" class="check-slot"></span> No</li>
+                        <li><span id="pdf-g8-y" class="check-slot"></span> Yes &nbsp;&nbsp; <span id="pdf-g8-n" class="check-slot"></span> No</li>
+                    </ul>
+                </td>
+            </tr>
+
+            <tr><td colspan="3" class="section-header">VI. Social Inclusion</td></tr>
+            <tr>
+                <td colspan="2">
+                    <ol>
+                        <li>Are you a solo parent?</li>
+                        <li>Are you part of the Indigenous People group? (Specify: <span id="pdf-s2" class="input-line-pdf" style="width: 150px; border-bottom: none;"></span>)</li>
+                    </ol>
+                </td>
+                <td>
+                    <ul class="yes-no-list">
+                        <li><span id="pdf-s1-y" class="check-slot"></span> Yes &nbsp;&nbsp; <span id="pdf-s1-n" class="check-slot"></span> No</li>
+                        <li><span class="check-slot"></span> Yes &nbsp;&nbsp; <span class="check-slot"></span> No</li>
+                    </ul>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="3"><em><strong>This is to certify that I have briefed the nominees of the expected output, and we have agreed on how and when he/she will apply the new learning in the workplace.</strong></em></td>
+            </tr>
+            <tr style="page-break-inside: avoid;">
+                <td style="width: 50%;">
+                    Signature of Primary Participant:<br>
+                    <div class="signature-area"><img id="pdf-user-signature-preview" src="" alt="Signature"></div>
+                </td>
+                <td colspan="2">
+                    Signature of Office/Unit Head:<br>
+                    <div class="signature-area"><img id="pdf-admin-signature-preview" src="" alt="Signature"></div>
+                </td>
+            </tr>
+        </table>
+
+        <div style="page-break-before: always;">
+            <div class="terms-header">TERMS AND CONDITIONS</div>
+            <p style="margin-bottom: 10px;">By submitting this Learning and Development Nomination Form, the parties agree to the following conditions regarding attendance and substitution:</p>
+            <ol class="terms-list">
+                <li><strong>ADVANCE NOTICE OF CANCELLATION.</strong> The Primary Participant shall notify the appropriate office at least three (3) days prior to the training if he/she will not pursue the scheduled Learning & Development Intervention (LDI).</li>
+                <li><strong>FORMAL JUSTIFICATION AND SUBSTITUTION.</strong> The Primary Participant must provide a formal written justification for declining the training. Upon this formal notification, the Alternate/Substitute Participant (ASP) will be endorsed to attend the training.</li>
+                <li><strong>SAME-DAY CANCELLATION.</strong> In cases in which the Primary Participant declines the training on the actual day of the event, the cancellation shall only be accepted if it is due to a major reason.</li>
+                <li><strong>ACCEPTABLE MAJOR REASONS.</strong> Valid major reasons for same-day cancellation and the immediate endorsement of the Alternate/Substitute Participant (ASP) include the following:
+                    <ol class="sub-list">
+                        <li>Illness.</li>
+                        <li>Force majeure.</li>
+                        <li>Death.</li>
+                        <li>Urgent and critical official business directives from the department.</li>
+                    </ol>
+                </li>
+                <li><strong>RELEVANCE TO FUNCTIONS.</strong> The nomination to the LDI must be formally justified based on its relevance to the participant’s actual functions and specific development needs. The intervention must purposefully address identified core, leadership, or functional competencies.</li>
+                <li><strong>APPROVAL AND ENDORSEMENT.</strong> The nomination, including the designation of the ASP, is only considered valid and final upon the complete briefing of the nominee and the official signature of the Office/Unit Head.</li>
+            </ol>
+            <div class="footnote"><hr><em>Revised Learning and Development Nomination Form</em>, DOTr-HRDD-Forms-001 | Rev. No.: 005, 2025</div>
+        </div>
+    </div>
+</div>
+        
+        <div id="pdf-ja-content">
+            <style>
+                .ja-pdf-wrapper { font-family: "Book Antiqua", "Times New Roman", serif; font-size: 11pt; color: black; background: white; width: 800px; margin: 0 auto; padding: 20px; }
+                .ja-pdf-wrapper table { width: 100%; border-collapse: collapse; border-spacing: 0; margin: 0; padding: 0; table-layout: fixed; }
+                .ja-pdf-wrapper tr { page-break-inside: avoid; }
+                .ja-pdf-wrapper td, .ja-pdf-wrapper th { border: 1px solid black; padding: 4px 5px; vertical-align: top; font-size: 10pt; word-wrap: break-word; }
+                .ja-pdf-wrapper .center { text-align: center; }
+                .ja-pdf-wrapper .bold { font-weight: bold; }
+                .ja-pdf-wrapper .bg-blue-light { background-color: #A6C9EC; }
+                .ja-pdf-wrapper .bg-blue-pale { background-color: #DAE9F8; }
+            </style>
+            <div class="ja-pdf-wrapper">
+                <table><tr><td style="border-bottom: none;"><div style="display: flex; align-items: center; gap: 15px;"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Department_of_Transportation_%28Philippines%29.svg/330px-Department_of_Transportation_%28Philippines%29.svg.png" width="70" alt="DOTr"><img src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Bagong_Pilipinas_logo.png" width="80" alt="Bagong Pilipinas"><div><p style="margin: 0;">Republic of the Philippines</p><p style="margin: 0; font-weight: bold;">DEPARTMENT OF TRANSPORTATION</p></div></div></td></tr></table>
+                <table><tr><td class="bg-blue-light center" style="padding: 5px;"><p class="bold" style="font-size: 14pt;">JOB ANALYSIS FORM</p></td></tr></table>
+                <table style="width: 100%;">
+                    <tr><td style="width: 25%;"><span class="bold">Full Name:</span></td><td><span id="pdf-ja-fullname" class="bold"></span></td></tr>
+                    <tr><td><span class="bold">Position Title:</span></td><td><span id="pdf-ja-position" class="bold"></span></td></tr>
+                    <tr><td><span class="bold">Office/Service/Division:</span></td><td><span id="pdf-ja-office" class="bold"></span></td></tr>
+                    <tr><td><span class="bold">Section/Project/Unit:</span></td><td><span id="pdf-ja-section" class="bold"></span></td></tr>
+                    <tr><td><span class="bold">Alternate Position:</span></td><td><span id="pdf-ja-alternate" class="bold"></span></td></tr>
+                </table>
+                <table><tr><td class="bg-blue-pale center" style="padding: 5px;"><p class="bold">JOB PURPOSE</p></td></tr><tr><td style="min-height: 60px; vertical-align: top;"><div id="pdf-ja-purpose" style="white-space: pre-wrap;"></div></td></tr></table>
+                <table><tr><td class="bg-blue-pale center"><p class="bold">MAIN DUTIES AND RESPONSIBILITIES</p></td></tr><tr><td style="min-height: 150px; vertical-align: top;"><div id="pdf-ja-main-duties" style="white-space: pre-wrap;"></div></td></tr></table>
+                <table><tr><td class="bg-blue-pale center"><p class="bold">SECONDARY DUTIES & RESPONSIBILITIES</p></td></tr></table>
+                <table><thead><tr><td class="center bold">NO.</td><td class="center bold">TASKS</td><td class="center bold" style="font-size: 8pt;">Daily</td><td class="center bold" style="font-size: 8pt;">Weekly</td><td class="center bold" style="font-size: 8pt;">Monthly</td><td class="center bold" style="font-size: 8pt;">Quarterly</td><td class="center bold" style="font-size: 8pt;">As Instructed</td></tr></thead><tbody id="pdf-ja-duties-body"></tbody></table>
+                <table><tr><td class="bg-blue-pale center"><p class="bold">REQUIRED COMPETENCIES</p></td></tr></table>
+                <table><thead><tr><td class="center bold">NO.</td><td class="center bold">SKILLS</td><td class="center bold" style="font-size: 8pt;">BASIC</td><td class="center bold" style="font-size: 8pt;">INTERMEDIATE</td><td class="center bold" style="font-size: 8pt;">ADVANCED</td><td class="center bold" style="font-size: 8pt;">SUPERIOR</td></tr></thead><tbody id="pdf-ja-skills-body"></tbody></table>
+                <table><tr><td class="bg-blue-pale center"><p class="bold">TOOLS AND EQUIPMENT</p></td></tr><tr><td style="min-height: 40px;"><div id="pdf-ja-tools" style="white-space: pre-wrap;"></div></td></tr></table>
+                <table><tr><td class="bg-blue-pale center"><p class="bold">CHALLENGES AND CRITICAL ISSUES</p></td></tr><tr><td style="min-height: 60px;"><div id="pdf-ja-challenges" style="white-space: pre-wrap;"></div></td></tr></table>
+                <table><tr><td class="bg-blue-pale center"><p class="bold">ADDITIONAL COMMENTS</p></td></tr><tr><td style="min-height: 60px;"><div id="pdf-ja-comments" style="white-space: pre-wrap;"></div></td></tr></table>
+            </div>
+        </div>
+    </div>
+    
+    <div id="admin-dashboard" class="min-h-screen xl:flex w-full bg-gray-50 text-gray-900 dark:bg-gray-900 transition-colors duration-300">
+        
+        <aside id="app-sidebar" class="fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 w-[290px] -translate-x-full lg:translate-x-0">
+            <div class="py-8 flex justify-start items-center gap-3">
+                <img id="logo-icon" src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Department_of_Transportation_%28Philippines%29.svg/330px-Department_of_Transportation_%28Philippines%29.svg.png" class="w-8 h-8 hidden" alt="Logo">
+                <div id="logo-full" class="flex items-center gap-3">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Department_of_Transportation_%28Philippines%29.svg/330px-Department_of_Transportation_%28Philippines%29.svg.png" class="w-8 h-8" alt="Logo">
+                    <span class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">DOTr-HRDD</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
+                <nav class="mb-6">
+                    <div class="flex flex-col gap-4">
+                        <div>
+                            <h2 class="mb-4 text-xs uppercase flex leading-[20px] text-gray-400 font-semibold justify-start">
+                                <span class="menu-item-text">Menu</span>
+                            </h2>
+                            <ul class="flex flex-col gap-2">
+                                <li>
+                                    <button onclick="switchTab('overview')" id="nav-overview" class="menu-item nav-item active">
+                                        <svg class="w-5 h-5 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                                        <span class="menu-item-text">Dashboard</span>
+                                    </button>
+                                </li>
+                                <li>
+                                    <button onclick="switchTab('nominations')" id="nav-nominations" class="menu-item nav-item menu-item-inactive dark:text-gray-400 dark:hover:bg-white/5">
+                                        <svg class="w-5 h-5 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                        <span class="menu-item-text">Nominations</span>
+                                    </button>
+                                </li>
+                                <li>
+                                    <button onclick="switchTab('job-analysis')" id="nav-job-analysis" class="menu-item nav-item menu-item-inactive dark:text-gray-400 dark:hover:bg-white/5">
+                                        <svg class="w-5 h-5 text-current" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                                        <span class="menu-item-text">Job Analysis Approvals</span>
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        </div>
+                </nav>
+            </div>
+        </aside>
+
+        <div id="mobile-backdrop" class="fixed inset-0 z-40 bg-gray-900 bg-opacity-50 hidden lg:hidden transition-opacity" onclick="toggleMobileSidebar()"></div>
+
+        <div id="main-content-wrapper" class="flex-1 flex flex-col transition-all duration-300 ease-in-out lg:ml-[290px] min-h-screen">
+            
+            <header class="sticky top-0 flex w-full bg-gradient-to-r from-white via-blue-50 to-white border-b border-gray-200 z-30 h-16 sm:h-20 dark:bg-gradient-to-r dark:from-gray-900 dark:via-slate-800 dark:to-gray-900 dark:border-gray-700 transition-colors duration-300 shadow-md" id="main-header">
+                <div class="flex flex-col items-center justify-between flex-grow lg:flex-row lg:px-6">
+                    <div class="flex items-center justify-between w-full gap-2 px-3 py-3 border-b border-gray-200 dark:border-gray-800 sm:gap-4 lg:justify-normal lg:border-b-0 lg:px-0 lg:py-4">
+                        
+                        <button class="items-center justify-center w-10 h-10 text-gray-500 border border-gray-200 rounded-lg z-30 lg:flex dark:text-gray-400 lg:h-11 lg:w-11 lg:border dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" onclick="toggleSidebarLogic()" aria-label="Toggle Sidebar">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+                        </button>
+
+                        <div class="lg:hidden flex items-center font-bold text-gray-800 dark:text-white">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Department_of_Transportation_%28Philippines%29.svg/330px-Department_of_Transportation_%28Philippines%29.svg.png" class="w-8 h-8 mr-2" alt="Logo">
+                            DOTr-HRDD
+                        </div>
+
+                        <div class="hidden lg:block ml-4 relative">
+                            <h2 class="text-xl font-bold text-gray-800 dark:text-white" id="section-title">Dashboard</h2>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 font-body-modern" id="welcome-text">Supervisor Console Overview</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-end w-full gap-4 px-5 py-4 lg:flex lg:px-0">
+                        
+                        <div class="flex flex-col items-end mr-2 border-r border-gray-200 dark:border-gray-700 pr-4">
+                            <span id="header-time" class="text-sm font-bold text-gray-800 dark:text-white font-display"></span>
+                            <span id="header-date" class="text-xs text-gray-500 dark:text-gray-400"></span>
+                        </div>
+
+                        <div class="flex items-center gap-2 sm:gap-3">
+                            <button onclick="toggleTheme()" class="flex items-center justify-center w-11 h-11 text-gray-500 transition-colors bg-white border border-gray-200 rounded-full hover:text-gray-700 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white">
+                                <svg class="hidden dark:block" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                                <svg class="block dark:hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                            </button>
+
+                            <button onclick="refreshData()" class="flex items-center justify-center w-11 h-11 text-gray-500 transition-colors bg-white border border-gray-200 rounded-full hover:text-brand-600 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-brand-400" title="Refresh Data">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                            </button>
+
+                            <div class="relative">
+                                <button id="notif-toggle-btn" class="relative flex items-center justify-center w-11 h-11 text-gray-500 transition-colors bg-white border border-gray-200 rounded-full hover:text-gray-700 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white" onclick="toggleNotifDropdown(event)">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                                    <span id="notif-badge" class="absolute right-0 top-0.5 z-10 flex h-2.5 w-2.5 rounded-full bg-orange-400 border-2 border-white dark:border-gray-900 hidden">
+                                        <span class="absolute inline-flex w-full h-full bg-orange-400 rounded-full opacity-75 animate-ping"></span>
+                                    </span>
+                                </button>
+                                <div id="notif-dropdown-menu" class="hidden absolute right-0 mt-[17px] flex h-[400px] w-[350px] flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-800 dark:bg-gray-800 z-50">
+                                    <div class="flex items-center justify-between pb-3 mb-3 border-b border-gray-100 dark:border-gray-700">
+                                        <h5 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Notification</h5>
+                                    </div>
+                                    <ul id="notifications-list" class="flex flex-col h-auto overflow-y-auto custom-scrollbar gap-2">
+                                        </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="relative">
+                            <button id="user-toggle-btn" class="flex items-center text-gray-700 dropdown-toggle dark:text-gray-400 ml-2" onclick="toggleUserDropdown(event)">
+                                <span class="mr-3 overflow-hidden rounded-full h-11 w-11 bg-brand-100 text-brand-600 border border-brand-200 flex items-center justify-center font-bold dark:border-brand-800 dark:bg-brand-900/30">
+                                    AD
+                                </span>
+                                <span class="block mr-1 font-medium text-sm hidden sm:block">Supervisor</span>
+                                <svg class="stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200" width="18" height="20" viewBox="0 0 18 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M4.3125 8.65625L9 13.3437L13.6875 8.65625" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                            </button>
+
+                            <div id="user-dropdown-menu" class="hidden absolute right-0 mt-[17px] flex w-[260px] flex-col rounded-2xl border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-800 dark:bg-gray-800 z-50">
+                                <div class="pb-3 border-b border-gray-200 dark:border-gray-700">
+                                    <span class="block font-medium text-gray-700 text-sm dark:text-gray-200">Supervisor User</span>
+                                    <span class="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">supervisor@dotr.gov.ph</span>
+                                </div>
+                                
+                                <button onclick="logout()" class="flex items-center w-full gap-3 px-3 py-2 mt-3 font-medium text-red-600 rounded-lg text-sm hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10 transition-colors">
+                                    Sign out
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </header>
+
+            <main id="content-area" class="p-4 mx-auto w-full max-w-screen-2xl md:p-6 flex-1 overflow-y-auto transition-colors duration-300">
+                <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <h2 id="page-title" class="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h2>
+                </div>
+
+                <div id="tab-overview" class="space-y-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
+                        <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-800 transition-colors duration-300">
+                            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-600 dark:bg-gray-700 mb-4">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            </div>
+                            <div>
+                                <h4 class="text-3xl font-bold text-gray-900 dark:text-white" id="val-submitted">0</h4>
+                                <span class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Forms Submitted</span>
+                            </div>
+                        </div>
+                        <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-800 transition-colors duration-300">
+                            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-gray-700 mb-4">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </div>
+                            <div>
+                                <h4 class="text-3xl font-bold text-emerald-600" id="val-approved">0</h4>
+                                <span class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Endorsed</span>
+                            </div>
+                        </div>
+                        <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-800 transition-colors duration-300">
+                            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-amber-500 dark:bg-gray-700 mb-4">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                            </div>
+                            <div>
+                                <h4 class="text-3xl font-bold text-amber-600" id="val-substitutions">0</h4>
+                                <span class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Substitutions</span>
+                            </div>
+                        </div>
+                        <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-800 transition-colors duration-300">
+                            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-purple-50 text-purple-600 dark:bg-gray-700 mb-4">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                            </div>
+                            <div>
+                                <h4 class="text-3xl font-bold text-purple-600" id="val-csc">0</h4>
+                                <span class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">CSC Enrollees</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-nominations" class="hidden">
+                    <div class="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden dark:border-gray-800 dark:bg-gray-800 transition-colors duration-300">
+                        <div class="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+                            <h4 class="text-lg font-bold text-gray-800 dark:text-white">Pending Nominations</h4>
+                        </div>
+                        <div class="max-w-full overflow-x-auto">
+                            <table class="w-full text-left table-auto">
+                                <thead>
+                                    <tr class="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">
+                                        <th class="py-4 px-6 font-semibold">Employee</th>
+                                        <th class="py-4 px-6 font-semibold">Training Subject</th>
+                                        <th class="py-4 px-6 font-semibold">Date Filed</th>
+                                        <th class="py-4 px-6 font-semibold">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="nominations-table-body" class="divide-y divide-gray-100 dark:divide-gray-700 text-sm">
+                                </tbody>
+                            </table>
+                            <div id="nominations-empty" class="p-8 text-center text-gray-500 dark:text-gray-400 hidden">No nominations found.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-job-analysis" class="hidden">
+                    <div class="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden dark:border-gray-800 dark:bg-gray-800 transition-colors duration-300">
+                        <div class="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+                            <h4 class="text-lg font-bold text-gray-800 dark:text-white">Job Analysis Reviews</h4>
+                        </div>
+                        <div class="max-w-full overflow-x-auto">
+                            <table class="w-full text-left table-auto">
+                                <thead>
+                                    <tr class="bg-gray-50 dark:bg-gray-800/50 text-gray-500 dark:text-gray-400 text-xs uppercase tracking-wider">
+                                        <th class="py-4 px-6 font-semibold">Employee</th>
+                                        <th class="py-4 px-6 font-semibold">Position</th>
+                                        <th class="py-4 px-6 font-semibold">Date Submitted</th>
+                                        <th class="py-4 px-6 font-semibold">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="job-analysis-table-body" class="divide-y divide-gray-100 dark:divide-gray-700 text-sm">
+                                </tbody>
+                            </table>
+                            <div id="job-analysis-empty" class="p-8 text-center text-gray-500 dark:text-gray-400 hidden">No job analysis forms found.</div>
+                        </div>
+                    </div>
+                </div>
+
+                </main>
+
+            <div id="details-modal" class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm hidden transition-opacity opacity-0">
+                <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden relative border border-gray-200 dark:border-gray-700">
+                    
+                    <div class="bg-gray-800 dark:bg-gray-900 p-6 flex justify-between items-center text-white shrink-0 border-b border-gray-700">
+                        <div>
+                            <h2 id="modal-training-title" class="text-2xl font-bold font-display">Training Title</h2>
+                            <p class="text-gray-400 text-sm">Application Details</p>
+                        </div>
+                        <button onclick="closeDetails()" class="bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+
+                    <div class="flex-1 overflow-hidden flex flex-col md:flex-row">
+                        <div class="w-full md:w-1/2 bg-gray-50 dark:bg-gray-800 p-8 overflow-y-auto custom-scroll border-r border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 pb-2">Training Details</h3>
+                            
+                            <div class="space-y-6">
+                                <div>
+                                    <h4 class="text-sm font-semibold text-brand-600 dark:text-brand-400 mb-1">Description</h4>
+                                    <p id="modal-desc" class="text-gray-600 dark:text-gray-300 leading-relaxed text-justify text-sm"></p>
+                                </div>
+                                
+                                <div class="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                                    <h4 class="text-sm font-semibold text-purple-600 dark:text-purple-400 mb-2">Key Information</h4>
+                                    <ul class="space-y-3 text-sm text-gray-700 dark:text-gray-300">
+                                        <li class="flex gap-2"><span class="font-bold min-w-[100px]">Duration:</span> <span id="modal-duration"></span></li>
+                                        <li class="flex gap-2"><span class="font-bold min-w-[100px]">Level:</span> <span id="modal-level"></span></li>
+                                        <li class="flex gap-2"><span class="font-bold min-w-[100px]">Competencies:</span> <span id="modal-competencies"></span></li>
+                                        <li class="flex gap-2"><span class="font-bold min-w-[100px]">Target:</span> <span id="modal-target"></span></li>
+                                        <li class="flex gap-2"><span class="font-bold min-w-[100px]">Cost:</span> <span id="modal-cost" class="font-bold text-emerald-600 dark:text-emerald-400"></span></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="w-full md:w-1/2 p-8 overflow-y-auto custom-scroll flex flex-col dark:bg-gray-800">
+                            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 pb-2">Nominee Information</h3>
+                            
+                            <div class="mb-6 space-y-3 text-sm">
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div><p class="text-gray-400 text-xs uppercase">Employee Name</p><p id="modal-user-name" class="font-bold text-gray-800 dark:text-white text-lg"></p></div>
+                                    <div><p class="text-gray-400 text-xs uppercase">Office/Unit</p><p id="modal-user-office" class="font-semibold text-gray-700 dark:text-gray-300"></p></div>
+                                    <div><p class="text-gray-400 text-xs uppercase">Position</p><p id="modal-user-position" class="font-semibold text-gray-700 dark:text-gray-300"></p></div>
+                                    <div><p class="text-gray-400 text-xs uppercase">Status</p><p id="modal-app-status" class="font-bold"></p></div>
+                                </div>
+                                <div class="mt-4">
+                                    <p class="text-gray-400 text-xs uppercase mb-1">Justification</p>
+                                    <div class="bg-gray-50 dark:bg-gray-900 p-3 rounded-lg border border-gray-100 dark:border-gray-700 text-gray-600 dark:text-gray-400 italic text-justify" id="modal-justification"></div>
+                                </div>
+                            </div>
+
+                            <div class="mt-auto border-t border-gray-100 dark:border-gray-700 pt-6">
+                                <h4 class="font-bold text-gray-800 dark:text-white mb-3">Supervisor Actions</h4> 
+                                <div class="flex gap-3 mb-4">
+                                    <button onclick="viewCurrentPDF()" class="flex-1 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-600 dark:text-gray-300 font-bold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        View PDF
+                                    </button>
+                                </div>
+
+                                <div id="decision-buttons" class="grid grid-cols-2 gap-4">
+                                    <button onclick="triggerDisapprove()" class="py-3 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl font-bold hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors">Disapprove</button>
+                                    <button onclick="showSignatureZone()" class="py-3 bg-emerald-600 text-white border border-emerald-600 rounded-xl font-bold hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200 dark:shadow-none">Approve & Endorse</button>
+                                </div>
+
+                                <div id="signature-section" class="hidden mt-4 animate-fade-in-up">
+                                    <div id="drop-zone" class="border-2 border-dashed border-emerald-300 bg-emerald-50/50 dark:bg-emerald-900/20 dark:border-emerald-700 rounded-xl p-6 text-center transition-all">
+                                        <p class="text-emerald-800 dark:text-emerald-400 font-bold mb-2">Attach E-Signature</p>
+                                        <p class="text-emerald-600 dark:text-emerald-500 text-xs mb-4">Drag and drop your signature image here</p>
+                                        <input type="file" id="sig-input" class="hidden" accept="image/*">
+                                        <div id="sig-preview-container" class="hidden flex justify-center mb-4 bg-white p-2 rounded">
+                                            <img id="sig-preview" class="h-16 mix-blend-multiply" src="">
+                                        </div>
+                                        <button onclick="document.getElementById('sig-input').click()" class="text-xs text-emerald-600 dark:text-emerald-400 underline cursor-pointer">Or click to upload</button>
+                                    </div>
+                                    <div class="flex gap-2 mt-4">
+                                        <button onclick="hideSignatureZone()" class="flex-1 py-2 text-gray-500 font-semibold hover:text-gray-700 dark:hover:text-gray-300">Cancel</button>
+                                        <button id="confirm-approve-btn" onclick="confirmApproval()" disabled class="flex-1 py-2 bg-gray-300 text-white rounded-lg font-bold cursor-not-allowed transition-colors">Confirm Approval</button>
+                                    </div>
+                                </div>
+
+                                <div id="disapprove-section" class="hidden mt-4 animate-fade-in-up bg-red-50 dark:bg-red-900/20 p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-inner">
+                                    <h4 class="text-red-800 dark:text-red-400 font-bold text-sm mb-3">Reason for Disapproval</h4>
+                                    <select id="disapprove-select" onchange="toggleCustomReason()" class="w-full p-2.5 mb-3 border border-red-200 dark:border-red-700 dark:bg-gray-800 rounded-lg text-sm text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-red-500 focus:outline-none">
+                                        <option value="">-- Select a Reason --</option>
+                                        <option value="exigency">Exigency of service: Critical tasks require your attention during the scheduled dates.</option>
+                                        <option value="compliance">Pending Compliance: There are outstanding requirements or prerequisites that need to be settled.</option>
+                                        <option value="other">Other (Please specify)</option>
+                                    </select>
+                                    <textarea id="disapprove-custom" rows="3" class="hidden w-full p-2.5 border border-red-200 dark:border-red-700 dark:bg-gray-800 rounded-lg text-sm text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-red-500 focus:outline-none mb-3" placeholder="Please specify the reason..."></textarea>
+                                    
+                                    <div class="flex gap-2">
+                                        <button onclick="hideDisapproveZone()" class="flex-1 py-2 text-gray-500 font-semibold hover:text-gray-700 dark:text-gray-300 dark:hover:text-white bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">Cancel</button>
+                                        <button onclick="confirmDisapproval()" class="flex-1 py-2 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-200 dark:shadow-none">Confirm Disapproval</button>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="ja-details-modal" class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm hidden transition-opacity opacity-0">
+                <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden relative border border-gray-200 dark:border-gray-700">
+                    
+                    <div class="bg-gray-800 dark:bg-gray-900 p-6 flex justify-between items-center text-white shrink-0 border-b border-gray-700">
+                        <div>
+                            <h2 id="ja-modal-fullname" class="text-2xl font-bold font-display">Employee Name</h2>
+                            <p class="text-gray-400 text-sm">Job Analysis Form Submission</p>
+                        </div>
+                        <button onclick="closeJADetails()" class="bg-white/10 hover:bg-white/20 p-2 rounded-full transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+
+                    <div class="flex-1 overflow-auto flex flex-col">
+                        <div class="flex-1 bg-gray-100 dark:bg-gray-700 overflow-auto p-6" id="ja-form-display-area">
+                        </div>
+
+                        <div class="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 flex gap-4 flex-shrink-0">
+                            <div class="flex-1">
+                                <p class="text-gray-600 dark:text-gray-300 text-sm mb-3">
+                                    <span class="font-semibold">Position:</span> <span id="ja-modal-position"></span>
+                                </p>
+                                <p class="text-gray-600 dark:text-gray-300 text-sm mb-3">
+                                    <span class="font-semibold">Office:</span> <span id="ja-modal-office"></span>
+                                </p>
+                                <p class="text-gray-600 dark:text-gray-300 text-sm">
+                                    <span class="font-semibold">Status:</span> <span id="ja-modal-status" class="font-bold"></span>
+                                </p>
+                            </div>
+
+                            <div id="ja-decision-buttons" class="flex gap-4">
+                                <button onclick="triggerJADisapprove()" class="py-3 px-6 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-xl font-bold hover:bg-red-100 transition-colors whitespace-nowrap">Disapprove</button>
+                                <button onclick="confirmJAApproval()" class="py-3 px-6 bg-emerald-600 text-white border border-emerald-600 rounded-xl font-bold hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200 dark:shadow-none whitespace-nowrap">Approve</button>
+                            </div>
+
+                            <div id="ja-disapprove-section" class="hidden w-full animate-fade-in-up bg-red-50 dark:bg-red-900/20 p-5 rounded-xl border border-red-100 dark:border-red-800 shadow-inner">
+                                <h4 class="text-red-800 dark:text-red-400 font-bold text-sm mb-3">Reason for Disapproval</h4>
+                                <textarea id="ja-disapprove-reason" rows="2" class="w-full p-2.5 mb-3 border border-red-200 dark:border-red-700 dark:bg-gray-800 rounded-lg text-sm text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-red-500 focus:outline-none" placeholder="Please provide reason for disapproval..."></textarea>
+                                
+                                <div class="flex gap-2">
+                                    <button onclick="hideJADisapproveZone()" class="flex-1 py-2 text-gray-500 font-semibold hover:text-gray-700 dark:hover:text-white bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">Cancel</button>
+                                    <button onclick="confirmJADisapproval()" class="flex-1 py-2 bg-red-600 text-white rounded-lg font-bold hover:bg-red-700 transition-colors shadow-lg shadow-red-200 dark:shadow-none">Confirm Disapproval</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="ja-pdf-viewer-modal" class="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm hidden transition-opacity opacity-0">
+                <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden relative border border-gray-200 dark:border-gray-700">
+                    
+                    <div class="bg-gradient-to-r from-brand-600 to-brand-700 p-4 flex justify-between items-center text-white flex-shrink-0">
+                        <h3 class="font-bold text-lg">Job Analysis Form Review</h3>
+                        <div class="flex gap-2">
+                            <button onclick="downloadJAPDF()" class="bg-white/20 hover:bg-white/30 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                Download PDF
+                            </button>
+                            <button onclick="closeJAPDFModal()" class="bg-white/20 hover:bg-white/30 p-2 rounded-lg transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="ja-pdf-viewer-content" class="flex-1 overflow-auto bg-gray-100 dark:bg-gray-700 flex items-start justify-center p-8" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- React-to-Vanilla UI Toggles (TailAdmin components emulation) ---
+        let isSidebarExpanded = true;
+        let isSidebarHovered = false;
+        let isMobileOpen = false;
+
+        function toggleSidebarLogic() {
+            if (window.innerWidth >= 1024) {
+                isSidebarExpanded = !isSidebarExpanded;
+                updateSidebarClasses();
+            } else {
+                toggleMobileSidebar();
+            }
+        }
+
+        function toggleMobileSidebar() {
+            isMobileOpen = !isMobileOpen;
+            updateSidebarClasses();
+            const backdrop = document.getElementById('mobile-backdrop');
+            if(isMobileOpen) backdrop.classList.remove('hidden');
+            else backdrop.classList.add('hidden');
+        }
+
+        function handleSidebarHover(hovering) {
+            if(!isSidebarExpanded) {
+                isSidebarHovered = hovering;
+                updateSidebarClasses();
+            }
+        }
+
+        function updateSidebarClasses() {
+            const sidebar = document.getElementById('app-sidebar');
+            const mainContent = document.getElementById('main-content-wrapper');
+            const logoFull = document.getElementById('logo-full');
+            const logoIcon = document.getElementById('logo-icon');
+            const textElements = document.querySelectorAll('.menu-item-text');
+
+            if(isMobileOpen) {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.add('translate-x-0');
+            } else if(window.innerWidth < 1024) {
+                sidebar.classList.add('-translate-x-full');
+                sidebar.classList.remove('translate-x-0');
+            }
+
+            if (window.innerWidth >= 1024) {
+                if(isSidebarExpanded || isSidebarHovered) {
+                    sidebar.classList.remove('w-[90px]');
+                    sidebar.classList.add('w-[290px]');
+                    mainContent.classList.remove('lg:ml-[90px]');
+                    mainContent.classList.add('lg:ml-[290px]');
+                    logoFull.classList.remove('hidden');
+                    logoIcon.classList.add('hidden');
+                    textElements.forEach(el => el.classList.remove('hidden'));
+                } else {
+                    sidebar.classList.remove('w-[290px]');
+                    sidebar.classList.add('w-[90px]');
+                    mainContent.classList.remove('lg:ml-[290px]');
+                    mainContent.classList.add('lg:ml-[90px]');
+                    logoFull.classList.add('hidden');
+                    logoIcon.classList.remove('hidden');
+                    textElements.forEach(el => el.classList.add('hidden'));
+                }
+            }
+        }
+
+        const sidebarEl = document.getElementById('app-sidebar');
+        sidebarEl.addEventListener('mouseenter', () => handleSidebarHover(true));
+        sidebarEl.addEventListener('mouseleave', () => handleSidebarHover(false));
+
+        function toggleTheme() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('color-theme', 'light');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('color-theme', 'dark');
+            }
+        }
+
+        function logout() {
+            window.location.href = 'login.html';
+        }
+
+        function toggleUserDropdown(e) {
+            e.stopPropagation();
+            const menu = document.getElementById('user-dropdown-menu');
+            menu.classList.toggle('hidden');
+            if(!menu.classList.contains('hidden')) {
+                menu.classList.add('dropdown-open');
+            }
+            document.getElementById('notif-dropdown-menu').classList.add('hidden');
+        }
+
+        function toggleNotifDropdown(e) {
+            e.stopPropagation();
+            const menu = document.getElementById('notif-dropdown-menu');
+            menu.classList.toggle('hidden');
+            if(!menu.classList.contains('hidden')) {
+                menu.classList.add('dropdown-open');
+            }
+            document.getElementById('user-dropdown-menu').classList.add('hidden');
+            
+            const ping = e.currentTarget.querySelector('.animate-ping');
+            if(ping) ping.parentElement.classList.add('hidden');
+        }
+
+        document.addEventListener('click', () => {
+            const userMenu = document.getElementById('user-dropdown-menu');
+            const notifMenu = document.getElementById('notif-dropdown-menu');
+            if(userMenu) userMenu.classList.add('hidden');
+            if(notifMenu) notifMenu.classList.add('hidden');
+        });
+
+        // --- Core Profile Loading Logic (Now strictly driven by Login/Registration) ---
+        function loadProfileData() {
+            const profile = JSON.parse(localStorage.getItem('DOTr_Supervisor_Profile')) || {
+                fname: 'Supervisor', lname: 'User', email: 'supervisor@dotr.gov.ph', phone: 'N/A', bio: 'Supervisor'
+            };
+
+            const fullName = profile.fname + (profile.lname ? ' ' + profile.lname : '');
+            
+            // Sync Header Display Name
+            const headerUserName = document.querySelector('#user-toggle-btn .sm\\:block');
+            if(headerUserName) headerUserName.textContent = profile.fname;
+
+            // Sync Dropdown Name
+            const dropdownName = document.querySelector('#user-dropdown-menu .text-gray-700');
+            if(dropdownName) dropdownName.textContent = fullName;
+            const dropdownEmail = document.querySelector('#user-dropdown-menu .text-gray-500');
+            if(dropdownEmail) dropdownEmail.textContent = profile.email;
+
+            // Update user initials bubble
+            const userInitials = profile.fname.charAt(0) + (profile.lname ? profile.lname.charAt(0) : '');
+            document.querySelectorAll('.bg-brand-100.text-brand-600.rounded-full').forEach(el => {
+                if(el.textContent.trim().length <= 2) {
+                    el.textContent = userInitials.toUpperCase() || 'AD';
+                }
+            });
+        }
+
+        // =====================================================================
+        // === CORE LOGIC, DB & WORKFLOWS ======================================
+        // =====================================================================
+
+        const DB_KEY = 'DOTr_HRDD_DB';
+        let currentAppIndex = null; 
+        let uploadedAdminSig = null;
+
+        const allTrainings = [
+            {
+                title: 'Human-Centered Leadership: Redefining Success with Well-Being in Mind',
+                duration: '2 days',
+                level: 'All Employees',
+                description: 'Discover how to lead with empathy and purpose, fostering a resilient culture where well-being drives sustainable success. This course empowers leaders to embrace a people-first approach.',
+                details: {
+                    competencies: 'Crafting and Nurturing High-Performing Organizations',
+                    target: 'All Employees',
+                    cost: 'Sponsored',
+                    mode: 'Virtual Training'
+                }
+            },
+            { title: 'Team Building & Collaboration', duration: '1 day', level: 'All Levels', description: 'Strengthen team dynamics and enhance collaborative work environments through practical exercises.', details: { competencies: 'Teamwork', target: 'All Levels', cost: 'Internal', mode: 'In-Person' }},
+            { title: 'Effective Communication Skills', duration: '3 days', level: 'Beginner', description: 'Master professional communication techniques for workplace success.', details: { competencies: 'Communication', target: 'Beginner', cost: 'Internal', mode: 'In-Person' }},
+            { title: 'Industry Conference 2025', duration: '3 days', level: 'Advanced', description: 'Network with industry leaders and gain insights into emerging trends.', details: { competencies: 'Technical', target: 'Senior Staff', cost: 'Php 15,000', mode: 'Conference' }},
+            { title: "Service Excellence: A Guide to RA 11032 Citizen's Charter", duration: 'Self-Paced', level: 'All Levels', description: 'Master the protocols of the Ease of Doing Business Act to ensure efficient and transparent government service delivery.', details: { competencies: 'Public Service', target: 'All Levels', cost: 'Free', mode: 'Online' }}
+        ];
+
+        function switchTab(tab) {
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('active', 'menu-item-active');
+                el.classList.add('menu-item-inactive', 'dark:text-gray-400', 'dark:hover:bg-white/5');
+            });
+            const activeNav = document.getElementById('nav-'+tab);
+            if(activeNav) {
+                activeNav.classList.remove('menu-item-inactive', 'dark:text-gray-400', 'dark:hover:bg-white/5');
+                activeNav.classList.add('active', 'menu-item-active');
+            }
+            
+            document.getElementById('tab-overview').classList.add('hidden');
+            document.getElementById('tab-nominations').classList.add('hidden');
+            document.getElementById('tab-job-analysis').classList.add('hidden');
+            
+            const targetTab = document.getElementById('tab-'+tab);
+            if (targetTab) targetTab.classList.remove('hidden');
+            
+            const titles = { overview: 'Dashboard', nominations: 'Nominations', 'job-analysis': 'Job Analysis Approvals' };
+            document.getElementById('page-title').textContent = titles[tab] || 'Overview';
+            
+            const sectionTitle = document.getElementById('section-title');
+            if(sectionTitle) sectionTitle.textContent = titles[tab] || 'Dashboard';
+            
+            if (tab === 'job-analysis') loadJobAnalysisData();
+        }
+
+        function getDB() {
+            return JSON.parse(localStorage.getItem(DB_KEY) || '{"submitted":0,"approved":0,"applications":[],"job_analysis_forms":[]}');
+        }
+        function saveDB(data) {
+            localStorage.setItem(DB_KEY, JSON.stringify(data));
+        }
+
+        // --- Dynamic Notifications Loader ---
+        function loadNotifications() {
+            const db = getDB();
+            const notifList = document.getElementById('notifications-list');
+            if(!notifList) return;
+            notifList.innerHTML = '';
+
+            let activities = [];
+
+            (db.applications || []).forEach((app, idx) => {
+                let action = 'submitted a new L&D Nomination Form';
+                if(app.status === 'Approved') action = 'application was approved by Super Admin';
+                if(app.status === 'Rejected') action = 'application was rejected';
+                activities.push({
+                    id: 'app_'+idx,
+                    initials: app.name ? app.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase() : 'U',
+                    name: app.name || 'User',
+                    action: action,
+                    date: app.date_submitted || 'Recent'
+                });
+            });
+
+            (db.job_analysis_forms || []).forEach((ja, idx) => {
+                let action = 'submitted a new Job Analysis Form';
+                if(ja.status === 'Approved') action = 'Job Analysis was approved';
+                if(ja.status === 'Rejected') action = 'Job Analysis was rejected';
+                activities.push({
+                    id: 'ja_'+idx,
+                    initials: ja.fullname ? ja.fullname.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase() : 'U',
+                    name: ja.fullname || 'User',
+                    action: action,
+                    date: ja.date_submitted || 'Recent'
+                });
+            });
+
+            // Simulate recent first by reversing array since exact timestamps are identical strings
+            activities.reverse();
+            
+            const recentActivities = activities.slice(0, 10);
+
+            if(recentActivities.length === 0) {
+                notifList.innerHTML = '<li class="p-4 text-sm text-gray-500 text-center dark:text-gray-400">No new notifications</li>';
+                document.getElementById('notif-badge').classList.add('hidden');
+                return;
+            }
+            
+            document.getElementById('notif-badge').classList.remove('hidden');
+
+            recentActivities.forEach(act => {
+                const li = document.createElement('li');
+                li.className = "flex gap-3 rounded-lg border-b border-gray-100 p-3 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-white/5 cursor-pointer transition-colors";
+                li.innerHTML = `
+                    <span class="relative block w-full h-10 rounded-full z-1 max-w-10">
+                        <div class="w-10 h-10 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center font-bold">${act.initials}</div>
+                    </span>
+                    <span class="block">
+                        <span class="mb-1.5 block text-sm text-gray-500 dark:text-gray-400 space-x-1">
+                            <span class="font-medium text-gray-800 dark:text-white/90">${act.name}</span>
+                            <span>${act.action}</span>
+                        </span>
+                        <span class="flex items-center gap-2 text-gray-500 text-xs dark:text-gray-400">
+                            <span>${act.date}</span>
+                        </span>
+                    </span>
+                `;
+                notifList.appendChild(li);
+            });
+        }
+
+        function loadData() {
+            const db = getDB();
+            
+            document.getElementById('val-submitted').textContent = db.submitted || 0;
+            document.getElementById('val-approved').textContent = db.approved || 0;
+            document.getElementById('val-substitutions').textContent = db.substitutions || 0;
+            document.getElementById('val-csc').textContent = db.csc_users || 0;
+
+            const tbody = document.getElementById('nominations-table-body');
+            tbody.innerHTML = '';
+            const apps = db.applications || [];
+            
+            if(apps.length === 0) document.getElementById('nominations-empty').classList.remove('hidden');
+            else document.getElementById('nominations-empty').classList.add('hidden');
+
+            apps.slice().reverse().forEach((app, reverseIdx) => {
+                const actualIdx = apps.length - 1 - reverseIdx;
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors";
+                
+                const statusColor = app.status === 'Approved' || app.status === 'Supervisor Approved' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 
+                                    app.status === 'Rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 
+                                    'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
+
+                tr.innerHTML = `
+                    <td class="py-4 px-6"><p class="font-semibold text-gray-900 dark:text-white">${app.name}</p></td>
+                    <td class="py-4 px-6">
+                        <button onclick="openDetails(${actualIdx})" class="text-left font-semibold text-brand-600 hover:text-brand-800 dark:text-brand-400 dark:hover:text-brand-300 hover:underline">
+                            ${app.title}
+                        </button>
+                    </td>
+                    <td class="py-4 px-6 text-gray-600 dark:text-gray-400">${app.date_submitted}</td>
+                    <td class="py-4 px-6"><span class="inline-flex rounded-md py-1 px-2.5 text-xs font-bold ${statusColor}">${app.status}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            loadProfileData();
+            loadNotifications();
+        }
+        
+        function refreshData() { loadData(); }
+
+        let currentJAIndex = null;
+
+        function loadJobAnalysisData() {
+            const db = getDB();
+            const jaForms = db.job_analysis_forms || [];
+            const tbody = document.getElementById('job-analysis-table-body');
+            tbody.innerHTML = '';
+            
+            if(jaForms.length === 0) {
+                document.getElementById('job-analysis-empty').classList.remove('hidden');
+            } else {
+                document.getElementById('job-analysis-empty').classList.add('hidden');
+            }
+
+            jaForms.slice().reverse().forEach((form, reverseIdx) => {
+                const actualIdx = jaForms.length - 1 - reverseIdx;
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors";
+                
+                const statusColor = form.status === 'Approved' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 
+                                    form.status === 'Rejected' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : 
+                                    'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400';
+
+                tr.innerHTML = `
+                    <td class="py-4 px-6">
+                        <button onclick="openJADetails(${actualIdx})" class="text-left font-semibold text-brand-600 hover:text-brand-800 dark:text-brand-400 dark:hover:text-brand-300 hover:underline">
+                            ${form.fullname}
+                        </button>
+                    </td>
+                    <td class="py-4 px-6 text-gray-900 dark:text-white">${form.position}</td>
+                    <td class="py-4 px-6 text-gray-600 dark:text-gray-400">${form.date_submitted || 'N/A'}</td>
+                    <td class="py-4 px-6"><span class="inline-flex rounded-md py-1 px-2.5 text-xs font-bold ${statusColor}">${form.status || 'Pending'}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function openJADetails(idx) {
+            currentJAIndex = idx;
+            const db = getDB();
+            const jaForms = db.job_analysis_forms || [];
+            const form = jaForms[idx];
+            
+            if (!form) {
+                console.error('Form not found at index', idx);
+                return;
+            }
+
+            const fullnameEl = document.getElementById('ja-modal-fullname');
+            if (fullnameEl) fullnameEl.textContent = form.fullname;
+            
+            const positionEl = document.getElementById('ja-modal-position');
+            if (positionEl) positionEl.textContent = form.position || 'N/A';
+            
+            const officeEl = document.getElementById('ja-modal-office');
+            if (officeEl) officeEl.textContent = form.office || 'N/A';
+            
+            const statusEl = document.getElementById('ja-modal-status');
+            if (statusEl) {
+                statusEl.textContent = form.status || 'Pending';
+                statusEl.className = form.status === 'Approved' ? 'font-bold text-emerald-600' : 
+                                     form.status === 'Rejected' ? 'font-bold text-red-600' : 
+                                     'font-bold text-amber-600';
+            }
+
+            document.getElementById('ja-disapprove-section').classList.add('hidden');
+            document.getElementById('ja-disapprove-reason').value = '';
+
+            const displayArea = document.getElementById('ja-form-display-area');
+            displayArea.className = "flex-1 bg-gray-200 dark:bg-gray-700 overflow-hidden flex flex-col p-0"; 
+            
+            if (form.pdf_data) {
+                displayArea.innerHTML = `
+                    <iframe src="${form.pdf_data}#toolbar=0&navpanes=0" class="w-full h-full flex-1" style="border: none;"></iframe>
+                `;
+            } else {
+                displayArea.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-gray-500 bg-white dark:bg-gray-800 p-8 text-center border border-gray-200 dark:border-gray-700 m-4 rounded-lg shadow-sm">
+                        <svg class="w-12 h-12 mb-4 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <p class="font-bold text-lg text-gray-900 dark:text-white">PDF Data Not Found</p>
+                        <p class="text-sm">The document may not have been generated properly or is from a legacy submission.</p>
+                    </div>
+                `;
+            }
+
+            if(form.status && form.status !== 'Pending') {
+                document.getElementById('ja-decision-buttons').classList.add('hidden');
+            } else {
+                document.getElementById('ja-decision-buttons').classList.remove('hidden');
+            }
+
+            const modal = document.getElementById('ja-details-modal');
+            modal.classList.remove('hidden');
+            modal.classList.remove('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('opacity-100');
+            }, 10);
+        }
+
+        function closeJADetails() {
+            const modal = document.getElementById('ja-details-modal');
+            modal.classList.remove('opacity-100');
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                currentJAIndex = null;
+            }, 300);
+        }
+
+        function triggerJADisapprove() {
+            document.getElementById('ja-decision-buttons').classList.add('hidden');
+            document.getElementById('ja-disapprove-section').classList.remove('hidden');
+        }
+
+        function hideJADisapproveZone() {
+            document.getElementById('ja-disapprove-section').classList.add('hidden');
+            document.getElementById('ja-decision-buttons').classList.remove('hidden');
+        }
+
+        let jaPDFViewed = false;
+
+        function viewJAFormPDF() {
+            if(currentJAIndex === null) return;
+
+            const db = getDB();
+            const jaForms = db.job_analysis_forms || [];
+            const form = jaForms[currentJAIndex];
+
+            if (form.pdf_data) {
+                const displayArea = document.getElementById('ja-form-display-area');
+                displayArea.innerHTML = `
+                    <div class="bg-white rounded-lg overflow-hidden h-full flex flex-col border border-gray-200">
+                        <div class="bg-gray-50 border-b border-gray-200 p-4 flex justify-between items-center">
+                            <h4 class="font-bold text-gray-900">Submitted Job Analysis Form (PDF)</h4>
+                            <button onclick="viewJAFormPDF()" class="text-brand-600 hover:text-brand-800 font-semibold text-sm border border-gray-200 bg-white hover:bg-gray-50 px-3 py-1 rounded-lg transition">Refresh</button>
+                        </div>
+                        <iframe src="${form.pdf_data}" style="flex: 1; border: none; width: 100%;"></iframe>
+                    </div>
+                `;
+            } else {
+                const displayArea = document.getElementById('ja-form-display-area');
+                displayArea.innerHTML = `<div class="text-center py-8"><p class="text-gray-500 font-medium">Generating PDF preview...</p></div>`;
+                populateJAPDFTemplate(form);
+                displayJAPDFModal();
+            }
+
+            jaPDFViewed = true;
+        }
+
+        function populateJAPDFTemplate(form) {
+            document.getElementById('pdf-ja-fullname').textContent = form.fullname || '';
+            document.getElementById('pdf-ja-position').textContent = form.position || '';
+            document.getElementById('pdf-ja-office').textContent = form.office || '';
+            document.getElementById('pdf-ja-section').textContent = form.section || '';
+            document.getElementById('pdf-ja-alternate').textContent = form.alternate || '';
+            document.getElementById('pdf-ja-purpose').textContent = form.purpose || '';
+            document.getElementById('pdf-ja-main-duties').textContent = form.main_duties || '';
+            document.getElementById('pdf-ja-tools').textContent = form.tools || '';
+            document.getElementById('pdf-ja-challenges').textContent = form.challenges || '';
+            document.getElementById('pdf-ja-comments').textContent = form.comments || '';
+
+            const dutiesBody = document.getElementById('pdf-ja-duties-body');
+            dutiesBody.innerHTML = '';
+            if (form.secondary_duties && form.secondary_duties.length > 0) {
+                form.secondary_duties.forEach((item, idx) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="center bold">${idx + 1}</td>
+                        <td>${item.duty || ''}</td>
+                        <td class="center">${item.frequency === 'Daily' ? 'X' : ''}</td>
+                        <td class="center">${item.frequency === 'Weekly' ? 'X' : ''}</td>
+                        <td class="center">${item.frequency === 'Monthly' ? 'X' : ''}</td>
+                        <td class="center">${item.frequency === 'Quarterly' ? 'X' : ''}</td>
+                        <td class="center">${item.frequency === 'Periodically/As indicated' ? 'X' : ''}</td>
+                    `;
+                    dutiesBody.appendChild(tr);
+                });
+            }
+
+            const skillsBody = document.getElementById('pdf-ja-skills-body');
+            skillsBody.innerHTML = '';
+            if (form.skills && form.skills.length > 0) {
+                form.skills.forEach((item, idx) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="center bold">${idx + 1}</td>
+                        <td>${item.skill || ''}</td>
+                        <td class="center">${item.level === 'Basic' ? 'X' : ''}</td>
+                        <td class="center">${item.level === 'Intermediate' ? 'X' : ''}</td>
+                        <td class="center">${item.level === 'Advance' ? 'X' : ''}</td>
+                        <td class="center">${item.level === 'Superior' ? 'X' : ''}</td>
+                    `;
+                    skillsBody.appendChild(tr);
+                });
+            }
+        }
+
+        function displayStoredJAPDF(pdfDataUrl) {
+            const content = document.getElementById('ja-pdf-viewer-content');
+            content.innerHTML = `<iframe src="${pdfDataUrl}" style="width: 100%; height: 100%; border: none;"></iframe>`;
+            displayJAPDFModal();
+        }
+
+        function displayJAPDFModal() {
+            const modal = document.getElementById('ja-pdf-viewer-modal');
+            const content = document.getElementById('ja-pdf-viewer-content');
+            
+            if (!content.querySelector('iframe')) {
+                const pdfElement = document.getElementById('pdf-ja-content');
+                const clone = pdfElement.cloneNode(true);
+                
+                content.innerHTML = '';
+                content.appendChild(clone);
+            }
+
+            modal.classList.remove('hidden');
+            setTimeout(() => modal.classList.remove('opacity-0'), 10);
+        }
+
+        function closeJAPDFModal() {
+            const modal = document.getElementById('ja-pdf-viewer-modal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        }
+
+        function downloadJAPDF() {
+            if(currentJAIndex === null) return;
+
+            const db = getDB();
+            const jaForms = db.job_analysis_forms || [];
+            const form = jaForms[currentJAIndex];
+
+            if (form.pdf_data) {
+                const link = document.createElement('a');
+                link.href = form.pdf_data;
+                link.download = `JobAnalysis_${form.fullname.replace(/\s+/g, '_')}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else {
+                const element = document.getElementById('pdf-ja-content');
+                
+                element.parentElement.style.visibility = 'visible';
+                element.parentElement.style.top = '0';
+                element.parentElement.style.left = '0';
+                element.parentElement.style.zIndex = '9999';
+
+                const opt = {
+                    margin: 0,
+                    filename: `JobAnalysis_${form.fullname.replace(/\s+/g, '_')}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true, allowTaint: true },
+                    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+                };
+                html2pdf().set(opt).from(element).save().then(() => {
+                    element.parentElement.style.visibility = 'hidden';
+                    element.parentElement.style.top = '-9999px';
+                    element.parentElement.style.left = '-9999px';
+                    element.parentElement.style.zIndex = '-1';
+                });
+            }
+        }
+
+        function confirmJAApproval() {
+            if(currentJAIndex === null) return;
+
+            const db = getDB();
+            const form = db.job_analysis_forms[currentJAIndex];
+
+            form.status = 'Approved';
+            form.approved_date = new Date().toLocaleDateString('en-US');
+
+            if(!form.messages) form.messages = [];
+            const approvalMsg = `
+                <div style="font-family: 'Times New Roman', serif; color: #1e293b;">
+                    <strong>SUBJECT: JOB ANALYSIS FORM APPROVED</strong><br><br>
+                    Dear <strong>${form.fullname}</strong>,<br><br>
+                    Your Job Analysis Form for the position of <strong>"${form.position}"</strong> has been <span style="color: #059669; font-weight: bold;">APPROVED</span>.<br><br>
+                    Your form has been acknowledged and recorded in the system.<br><br>
+                    <button onclick="downloadJAPDFFromUser('${form.id}')" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition-colors shadow-sm my-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        Download Submitted Form
+                    </button><br><br>
+                    Sincerely,<br>
+                    <strong>Supervisor / Unit Head</strong>
+                </div>
+            `;
+            form.messages.push({ sender: 'System', text: approvalMsg, read: false, timestamp: new Date().toISOString() });
+
+            saveDB(db);
+            alert("Job Analysis Form Approved!");
+            closeJADetails();
+            loadJobAnalysisData();
+        }
+
+        function confirmJADisapproval() {
+            const reason = document.getElementById('ja-disapprove-reason').value.trim();
+            
+            if (!reason) {
+                alert("Please provide a reason for disapproval.");
+                return;
+            }
+
+            if (!confirm("Are you sure you want to disapprove this Job Analysis Form?")) return;
+
+            if(currentJAIndex === null) return;
+
+            const db = getDB();
+            const form = db.job_analysis_forms[currentJAIndex];
+
+            form.status = 'Rejected';
+            form.rejection_reason = reason;
+            form.rejected_date = new Date().toLocaleDateString('en-US');
+
+            if(!form.messages) form.messages = [];
+            const rejectionMsg = `
+                <div style="font-family: 'Times New Roman', serif; color: #1e293b;">
+                    <strong>SUBJECT: JOB ANALYSIS FORM REQUIRES REVISION</strong><br><br>
+                    Dear <strong>${form.fullname}</strong>,<br><br>
+                    Your Job Analysis Form for the position of <strong>"${form.position}"</strong> has been <span style="color: #dc2626; font-weight: bold;">RETURNED FOR REVISION</span>.<br><br>
+                    <strong>Reason:</strong><br>
+                    <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 10px; margin: 10px 0; font-style: italic; color: #7f1d1d;">
+                        "${reason}"
+                    </div>
+                    <br>
+                    Please review and resubmit your Job Analysis Form addressing the concerns mentioned above.<br><br>
+                    Sincerely,<br>
+                    <strong>Supervisor / Unit Head</strong>
+                </div>
+            `;
+            form.messages.push({ sender: 'System', text: rejectionMsg, read: false, timestamp: new Date().toISOString() });
+
+            saveDB(db);
+            alert("Job Analysis Form Disapproved. User has been notified.");
+            closeJADetails();
+            loadJobAnalysisData();
+        }
+
+        // --- DETAILS MODAL LOGIC (NOMINATIONS) ---
+        function openDetails(idx) {
+            currentAppIndex = idx;
+            const db = getDB();
+            const app = db.applications[idx];
+            
+            const trainingInfo = allTrainings.find(t => t.title === app.title) || {
+                title: app.title,
+                duration: 'N/A',
+                level: 'N/A',
+                description: 'No detailed description available for this specific training title in the admin database.',
+                details: { competencies: 'N/A', target: 'N/A', cost: 'N/A' }
+            };
+
+            document.getElementById('modal-training-title').textContent = trainingInfo.title;
+            document.getElementById('modal-desc').textContent = trainingInfo.description;
+            document.getElementById('modal-duration').textContent = trainingInfo.duration;
+            document.getElementById('modal-level').textContent = trainingInfo.level;
+            document.getElementById('modal-competencies').textContent = trainingInfo.details.competencies || 'N/A';
+            document.getElementById('modal-target').textContent = trainingInfo.details.target || 'N/A';
+            document.getElementById('modal-cost').textContent = trainingInfo.details.cost || 'N/A';
+
+            document.getElementById('modal-user-name').textContent = app.name;
+            document.getElementById('modal-user-office').textContent = app.office || 'N/A';
+            document.getElementById('modal-user-position').textContent = app.position || 'N/A';
+            document.getElementById('modal-justification').textContent = app.justification || 'No justification provided.';
+            
+            const statusEl = document.getElementById('modal-app-status');
+            statusEl.textContent = app.status;
+            statusEl.className = app.status === 'Approved' || app.status === 'Supervisor Approved' ? 'font-bold text-emerald-600' : 
+                                 app.status === 'Rejected' ? 'font-bold text-red-600' : 
+                                 'font-bold text-amber-500';
+
+            document.getElementById('decision-buttons').classList.remove('hidden');
+            
+            document.getElementById('signature-section').classList.add('hidden');
+            uploadedAdminSig = null; 
+            document.getElementById('sig-preview').src = "";
+            document.getElementById('sig-preview-container').classList.add('hidden');
+            document.getElementById('confirm-approve-btn').disabled = true;
+            document.getElementById('confirm-approve-btn').classList.replace('bg-brand-600', 'bg-gray-300');
+
+            document.getElementById('disapprove-section').classList.add('hidden');
+            document.getElementById('disapprove-select').value = "";
+            document.getElementById('disapprove-custom').value = "";
+            document.getElementById('disapprove-custom').classList.add('hidden');
+
+            if(app.status !== 'Pending') {
+                document.getElementById('decision-buttons').classList.add('hidden');
+            }
+
+            document.getElementById('details-modal').classList.remove('hidden');
+            setTimeout(() => document.getElementById('details-modal').classList.remove('opacity-0'), 10);
+        }
+
+        function closeDetails() {
+            const modal = document.getElementById('details-modal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                currentAppIndex = null;
+            }, 300);
+        }
+
+        function viewCurrentPDF() {
+            if (currentAppIndex !== null) viewUserPDF(currentAppIndex);
+        }
+
+        // --- APPROVAL WORKFLOW ---
+        function showSignatureZone() {
+            document.getElementById('decision-buttons').classList.add('hidden');
+            document.getElementById('signature-section').classList.remove('hidden');
+        }
+
+        function hideSignatureZone() {
+            document.getElementById('signature-section').classList.add('hidden');
+            document.getElementById('decision-buttons').classList.remove('hidden');
+        }
+
+        const dropZone = document.getElementById('drop-zone');
+        const sigInput = document.getElementById('sig-input');
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('bg-brand-100', 'border-brand-500');
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('bg-brand-100', 'border-brand-500');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('bg-brand-100', 'border-brand-500');
+            const file = e.dataTransfer.files[0];
+            handleSignatureFile(file);
+        });
+
+        sigInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            handleSignatureFile(file);
+        });
+
+        function handleSignatureFile(file) {
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    uploadedAdminSig = e.target.result;
+                    document.getElementById('sig-preview').src = uploadedAdminSig;
+                    document.getElementById('sig-preview-container').classList.remove('hidden');
+                    
+                    const btn = document.getElementById('confirm-approve-btn');
+                    btn.disabled = false;
+                    btn.classList.replace('bg-gray-300', 'bg-brand-600');
+                    btn.classList.add('hover:bg-brand-700');
+                    btn.classList.remove('cursor-not-allowed');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                alert("Please upload a valid image file.");
+            }
+        }
+
+        function confirmApproval() {
+            if(!uploadedAdminSig) return;
+            
+            const db = getDB();
+            const app = db.applications[currentAppIndex];
+            
+            app.status = 'Supervisor Approved';
+            app.read = false;
+            app.admin_signature = uploadedAdminSig; 
+            db.approved = (db.approved || 0) + 1;
+
+            const letter = `
+                <div style="font-family: 'Times New Roman', serif; color: #1e293b;">
+                    <strong>SUBJECT: APPLICATION ENDORSEMENT</strong><br><br>
+                    Dear <strong>${app.name}</strong>,<br><br>
+                    This is to inform you that your application for <strong>"${app.title}"</strong> has been <span style="color: #059669; font-weight: bold;">ENDORSED</span> by your Immediate Supervisor.<br><br>
+                    It has now been forwarded to the HRDD Super Admin for final approval and confirmation of your slot.<br><br>
+                    Please wait for the final notice.<br><br>
+                    <button onclick="viewSignedPDF(${app.id})" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition-colors shadow-sm my-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        View Signed PDF
+                    </button><br><br>
+                    Sincerely,<br>
+                    <strong>Supervisor / Unit Head</strong>
+                </div>
+            `;
+
+            if(!app.messages) app.messages = [];
+            app.messages.push({ sender: 'System', text: letter, read: false, timestamp: new Date().toISOString() });
+
+            saveDB(db);
+            alert("Application Endorsed and Forwarded to HRDD!");
+            closeDetails();
+            loadData();
+        }
+
+        // --- DISAPPROVAL WORKFLOW ---
+        function triggerDisapprove() {
+            document.getElementById('decision-buttons').classList.add('hidden');
+            document.getElementById('disapprove-section').classList.remove('hidden');
+        }
+
+        function hideDisapproveZone() {
+            document.getElementById('disapprove-section').classList.add('hidden');
+            document.getElementById('decision-buttons').classList.remove('hidden');
+        }
+
+        function toggleCustomReason() {
+            const select = document.getElementById('disapprove-select');
+            const customArea = document.getElementById('disapprove-custom');
+            
+            if (select.value === 'other') {
+                customArea.classList.remove('hidden');
+            } else {
+                customArea.classList.add('hidden');
+            }
+        }
+
+        function confirmDisapproval() {
+            const select = document.getElementById('disapprove-select');
+            const customArea = document.getElementById('disapprove-custom');
+            let reason = '';
+
+            if (!select.value) {
+                alert("Please select a reason for disapproval.");
+                return;
+            }
+
+            if (select.value === 'exigency') {
+                reason = "Exigency of service: Critical tasks and deliverables require your attention during the scheduled training dates.";
+            } else if (select.value === 'compliance') {
+                reason = "Pending Compliance: There are outstanding compliance deliverables or prerequisites that must be settled prior to approval.";
+            } else if (select.value === 'other') {
+                reason = customArea.value.trim();
+                if (!reason) {
+                    alert("Please specify the reason.");
+                    return;
+                }
+            }
+
+            if (!confirm("Are you sure you want to disapprove this application? This will send a regret letter immediately.")) return;
+
+            const db = getDB();
+            const app = db.applications[currentAppIndex];
+
+            app.status = 'Rejected';
+            app.read = false;
+
+            const letter = `
+                <div style="font-family: 'Times New Roman', serif; color: #1e293b;">
+                    <strong>SUBJECT: NOTIFICATION OF DISAPPROVAL</strong><br><br>
+                    Dear <strong>${app.name}</strong>,<br><br>
+                    We regret to inform you that your application for the training program entitled <strong>"${app.title}"</strong> has been <span style="color: #dc2626; font-weight: bold;">DISAPPROVED</span> by your Immediate Supervisor.<br><br>
+                    This decision was made due to the following reason:<br>
+                    <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 10px; margin: 10px 0; font-style: italic; color: #7f1d1d;">
+                        "${reason}"
+                    </div>
+                    <br>
+                    We encourage you to settle any pending requirements or wait for future schedules that align better with your workload.<br><br>
+                    Sincerely,<br>
+                    <strong>Supervisor / Unit Head</strong>
+                </div>
+            `;
+
+            if(!app.messages) app.messages = [];
+            app.messages.push({ sender: 'System', text: letter, read: false, timestamp: new Date().toISOString() });
+
+            saveDB(db);
+            alert("Application Disapproved.");
+            closeDetails();
+            loadData();
+        }
+
+        // --- PDF VIEW LOGIC ---
+        function viewUserPDF(index) {
+            const db = getDB();
+            const data = db.applications[index];
+            
+            const textMap = {
+                'pdf-title': data.title,
+                'pdf-date-course': data.date_course,
+                'pdf-date-filing': data.date_filing,
+                'pdf-venue': data.venue,
+                'pdf-name': data.name,
+                'pdf-id': data.id_num,
+                'pdf-email': data.email,
+                'pdf-office': data.office,
+                'pdf-position': data.position,
+                'pdf-supervisor': data.supervisor,
+                'pdf-hired': data.date_hired,
+                'pdf-status': data.emp_status,
+                'pdf-sg': data.sg,
+                'pdf-service': data.service,
+                'pdf-contact': data.contact,
+                'pdf-gender': data.gender,
+                'pdf-oic': data.oic,
+                'pdf-asp': data.asp,
+                'pdf-justification': data.justification
+            };
+
+            for (const [id, val] of Object.entries(textMap)) {
+                const el = document.getElementById(id);
+                if(el) el.textContent = val || '';
+            }
+            
+            ['pdf-comp-core', 'pdf-comp-lead', 'pdf-comp-func'].forEach(id => document.getElementById(id).textContent = '');
+            if (data.competency === 'core') document.getElementById('pdf-comp-core').textContent = 'X';
+            if (data.competency === 'leadership') document.getElementById('pdf-comp-lead').textContent = 'X';
+            if (data.competency === 'functional') document.getElementById('pdf-comp-func').textContent = 'X';
+
+            for (let i = 1; i <= 8; i++) {
+                 document.getElementById(`pdf-g${i}-y`).textContent = '__';
+                 document.getElementById(`pdf-g${i}-n`).textContent = '__';
+                 if (data.gedsi[`g${i}`] === 'yes') document.getElementById(`pdf-g${i}-y`).textContent = 'X';
+                 else if (data.gedsi[`g${i}`] === 'no') document.getElementById(`pdf-g${i}-n`).textContent = 'X';
+            }
+
+            document.getElementById('pdf-s1-y').textContent = '__';
+            document.getElementById('pdf-s1-n').textContent = '__';
+            if (data.social && data.social.s1 === 'yes') document.getElementById('pdf-s1-y').textContent = 'X';
+            else if (data.social && data.social.s1 === 'no') document.getElementById('pdf-s1-n').textContent = 'X';
+            document.getElementById('pdf-s2').textContent = (data.social && data.social.s2) ? data.social.s2 : '';
+
+            const adminSigImg = document.getElementById('pdf-admin-signature-preview');
+            if (data.admin_signature) {
+                adminSigImg.src = data.admin_signature;
+                adminSigImg.style.display = 'block';
+            } else {
+                adminSigImg.style.display = 'none';
+            }
+
+            const userSigImg = document.getElementById('pdf-user-signature-preview');
+            if (data.user_signature) {
+                userSigImg.src = data.user_signature;
+                userSigImg.style.display = 'block';
+            } else {
+                userSigImg.style.display = 'none';
+            }
+
+            const element = document.getElementById('pdf-content');
+            
+            element.parentElement.style.visibility = 'visible';
+            element.parentElement.style.top = '0';
+            element.parentElement.style.left = '0';
+            element.parentElement.style.zIndex = '9999';
+
+            const opt = {
+              margin: 0,
+              filename: `Nomination_${data.name.replace(/\s+/g, '_')}.pdf`,
+              image: { type: 'jpeg', quality: 0.98 },
+              html2canvas: { scale: 2, useCORS: true, allowTaint: true },
+              jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+            
+            html2pdf().set(opt).from(element).output('bloburl').then(function(pdfUrl) {
+                element.parentElement.style.visibility = 'hidden';
+                element.parentElement.style.top = '-9999px';
+                element.parentElement.style.left = '-9999px';
+                element.parentElement.style.zIndex = '-1';
+                window.open(pdfUrl, '_blank');
+            });
+        }
+
+        // --- Digital Clock Logic ---
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            const dateStr = now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+            const timeEl = document.getElementById('header-time');
+            const dateEl = document.getElementById('header-date');
+            if (timeEl) timeEl.textContent = timeStr;
+            if (dateEl) dateEl.textContent = dateStr;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // --- OFFLINE FLAPPY BIRD-STYLE TRANSPORT GAME LOGIC ---
+        const offlineOverlay = document.getElementById('offline-overlay');
+        const dinoCanvas = document.getElementById('dinoCanvas');
+        const dctx = dinoCanvas.getContext('2d');
+        
+        let dGameLoop;
+        let dIsGameOver = false;
+        let dScore = 0;
+        let dFrames = 0;
+        let dPipes = [];
+        let dPipesCleared = 0;
+        
+        const characterImg = new Image();
+        
+        // This stops the canvas from crashing if your image link breaks or takes too long
+        characterImg.onerror = function() {
+            this.failed = true;
+        };
+        characterImg.src = "superhero.png"; // <-- Make sure your image file is exactly named "superhero.png" and is in the same folder!
+        
+        const character = { x: 50, y: 70, w: 34, h: 34, vy: 0, gravity: 0.25, jumpForce: -4.5, rotation: 0 };
+        
+        const iconsList = [
+            {icon: '\uea9b', desc: 'plane'}, // bx-plane
+            {icon: '\uea1e', desc: 'car'},   // bx-car
+            {icon: '\ueaae', desc: 'train'}, // bx-train
+            {icon: '\ueaab', desc: 'ship'}   // bx-ship
+        ];
+
+        function dJump() {
+            character.vy = character.jumpForce;
+        }
+        
+        function dResetGame() {
+            cancelAnimationFrame(dGameLoop);
+            dPipes = [];
+            dScore = 0;
+            dFrames = 0;
+            dPipesCleared = 0;
+            dIsGameOver = false;
+            character.y = dinoCanvas.height / 2;
+            character.vy = 0;
+            character.rotation = 0;
+            document.getElementById('dino-score').innerText = 'Score: 0';
+            dUpdateGame();
+        }
+        
+        function dUpdateGame() {
+            if (dIsGameOver) return;
+            dctx.clearRect(0, 0, dinoCanvas.width, dinoCanvas.height);
+            
+            // Draw modern city skyline background
+            dctx.fillStyle = document.documentElement.classList.contains('dark') ? '#111827' : '#e5e7eb';
+            dctx.fillRect(0, dinoCanvas.height - 30, dinoCanvas.width, 30); // Ground
+            dctx.fillStyle = document.documentElement.classList.contains('dark') ? '#1f2937' : '#d1d5db';
+            dctx.fillRect(100, 100, 40, 120); dctx.fillRect(160, 80, 50, 140); dctx.fillRect(230, 130, 35, 90); 
+            dctx.fillRect(300, 60, 45, 160); dctx.fillRect(380, 100, 40, 120); dctx.fillRect(450, 80, 50, 140); 
+            dctx.fillRect(520, 130, 35, 90);
+
+            // Character Physics
+            character.vy += character.gravity;
+            character.y += character.vy;
+            character.rotation = Math.max(-0.5, Math.min(0.5, character.vy * 0.05)); // Slight rotation
+
+            // Collision with Ground or Top
+            if (character.y + character.h >= dinoCanvas.height - 30) {
+                character.y = dinoCanvas.height - 30 - character.h;
+                dIsGameOver = true;
+            } else if (character.y <= 0) {
+                character.y = 0;
+                dIsGameOver = true;
+            }
+            
+            // --- NEW: Flying Speed/Wind Trails ---
+            dctx.fillStyle = document.documentElement.classList.contains('dark') ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.2)';
+            dctx.fillRect(character.x - 15 - Math.random()*15, character.y + 10, 15 + Math.random()*10, 2);
+            dctx.fillRect(character.x - 10 - Math.random()*10, character.y + 20, 10 + Math.random()*5, 2);
+            dctx.fillRect(character.x - 20 - Math.random()*20, character.y + 28, 20 + Math.random()*10, 2);
+
+            // Draw Character
+            dctx.save();
+            dctx.translate(character.x + character.w/2, character.y + character.h/2);
+            dctx.rotate(character.rotation);
+            
+            dctx.rotate(Math.PI / 2); 
+            
+            if(characterImg.complete && characterImg.naturalWidth > 0 && !characterImg.failed) {
+                dctx.drawImage(characterImg, -character.w/2, -character.h/2, character.w, character.h);
+            } else {
+                dctx.font = "34px Arial";
+                dctx.textAlign = "center";
+                dctx.textBaseline = "middle";
+                dctx.fillText("✈️", 0, 0);
+            }
+            dctx.restore();
+            
+            // Handle Pipes (Obstacles)
+            if (dFrames % 130 === 0) { 
+                let pipeWidth = 50;
+                let pipeGap = 100; // Wider gap for easier flying
+                let minTopHeight = 20;
+                let maxTopHeight = dinoCanvas.height - 30 - pipeGap - minTopHeight;
+                let topHeight = minTopHeight + Math.random() * maxTopHeight;
+                dPipes.push({ x: dinoCanvas.width, topH: topHeight, w: pipeWidth, gapH: pipeGap, speed: 2.5 + (dScore * 0.05) });
+            }
+            
+            // Use modern transport tower graphics for pipes
+            for (let i = 0; i < dPipes.length; i++) {
+                let pipe = dPipes[i];
+                pipe.x -= pipe.speed;
+                
+                // Draw Top Pipe
+                dctx.fillStyle = document.documentElement.classList.contains('dark') ? '#4b5563' : '#9ca3af';
+                dctx.fillRect(pipe.x, 0, pipe.w, pipe.topH);
+                dctx.fillStyle = document.documentElement.classList.contains('dark') ? '#6b7280' : '#d1d5db'; 
+                dctx.fillRect(pipe.x + 5, pipe.topH - 15, pipe.w - 10, 15); 
+                
+                // Draw Bottom Pipe
+                let bottomY = pipe.topH + pipe.gapH;
+                let bottomH = dinoCanvas.height - 30 - bottomY;
+                dctx.fillStyle = document.documentElement.classList.contains('dark') ? '#4b5563' : '#9ca3af';
+                dctx.fillRect(pipe.x, bottomY, pipe.w, bottomH);
+                dctx.fillStyle = document.documentElement.classList.contains('dark') ? '#6b7280' : '#d1d5db'; 
+                dctx.fillRect(pipe.x + 5, bottomY, pipe.w - 10, 15); 
+
+                // Add stylized transport icon inside the gap
+                dctx.save();
+                dctx.fillStyle = document.documentElement.classList.contains('dark') ? '#9ca3af' : '#6b7280'; // Icon color
+                dctx.font = '22px boxicons';
+                dctx.textBaseline = 'middle';
+                let iconData = iconsList[i % iconsList.length];
+                dctx.fillText(iconData.icon, pipe.x + pipe.w/2 - 11, pipe.topH + pipe.gapH/2);
+                dctx.restore();
+
+                // Collision Detection with slightly forgiving hitbox
+                let hitShrink = 6;
+                if (character.x + hitShrink < pipe.x + pipe.w && 
+                    character.x + character.w - hitShrink > pipe.x &&
+                    (character.y + hitShrink < pipe.topH || character.y + character.h - hitShrink > pipe.topH + pipe.gapH)) {
+                    dIsGameOver = true;
+                }
+                
+                // Score Tracking
+                if (!pipe.cleared && character.x > pipe.x + pipe.w) {
+                    dPipesCleared++;
+                    pipe.cleared = true;
+                    dScore = dPipesCleared;
+                    document.getElementById('dino-score').innerText = 'Score: ' + dScore;
+                }
+            }
+            
+            // Remove off-screen pipes
+            dPipes = dPipes.filter(pipe => pipe.x + pipe.w > 0);
+            
+            // Game Over Message
+            if (dIsGameOver) {
+                dctx.fillStyle = document.documentElement.classList.contains('dark') ? '#ef4444' : '#dc2626';
+                dctx.font = 'bold 24px "Space Grotesk", sans-serif';
+                dctx.fillText('TRANSPORT GAME OVER', dinoCanvas.width/2 - 145, 100);
+                dctx.fillStyle = document.documentElement.classList.contains('dark') ? '#e5e7eb' : '#374151';
+                dctx.font = 'bold 16px "Inter", sans-serif';
+                dctx.fillText('Click or Press Space to Restart', dinoCanvas.width/2 - 120, 130);
+            }
+
+            dFrames++;
+            if (!dIsGameOver) {
+                dGameLoop = requestAnimationFrame(dUpdateGame);
+            }
+        }
+        
+        // Listeners for Jumping
+        window.addEventListener('keydown', (e) => {
+            if ((e.code === 'Space' || e.code === 'ArrowUp') && !offlineOverlay.classList.contains('hidden')) {
+                e.preventDefault();
+                if (dIsGameOver) dResetGame();
+                else dJump();
+            }
+        });
+        
+        offlineOverlay.addEventListener('mousedown', (e) => {
+            if (dIsGameOver) dResetGame();
+            else dJump();
+        });
+        offlineOverlay.addEventListener('touchstart', (e) => {
+            if (dIsGameOver) dResetGame();
+            else dJump();
+        });
+        
+        // Listen for Online/Offline Events
+        function checkConnectionStatus() {
+            if (!navigator.onLine) {
+                offlineOverlay.classList.remove('hidden');
+                offlineOverlay.classList.add('flex');
+                dResetGame();
+            } else {
+                offlineOverlay.classList.add('hidden');
+                offlineOverlay.classList.remove('flex');
+                cancelAnimationFrame(dGameLoop);
+            }
+        }
+        
+        window.addEventListener('online', checkConnectionStatus);
+        window.addEventListener('offline', checkConnectionStatus);
+
+        // DEV HOTKEY: Press Ctrl + Shift + O to force start/stop the offline game overlay
+        window.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.shiftKey && e.code === 'KeyO') {
+                e.preventDefault();
+                if (offlineOverlay.classList.contains('hidden')) {
+                    offlineOverlay.classList.remove('hidden');
+                    offlineOverlay.classList.add('flex');
+                    dResetGame();
+                } else {
+                    offlineOverlay.classList.add('hidden');
+                    offlineOverlay.classList.remove('flex');
+                    cancelAnimationFrame(dGameLoop);
+                }
+            }
+        });
+        
+        // Initialize profile display if already loaded from cache before manual login hook occurs
+        document.addEventListener('DOMContentLoaded', () => {
+             loadProfileData();
+             setTimeout(checkConnectionStatus, 1000); // Check status on load
+        });
+    </script>
+</body>
+</html>
