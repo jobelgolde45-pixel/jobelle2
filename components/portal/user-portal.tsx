@@ -131,12 +131,12 @@ export function UserPortal({ username, onSignOut }: UserPortalProps) {
     }
   };
 
-  const handleRegisterHere = (training: (typeof TRAINING_CATALOG)[string][number]) => {
+  const handleRegisterHere = (_training: (typeof TRAINING_CATALOG)[string][number]) => {
     setActiveSection("nomination-form");
     setExpandedTrainings(null);
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, _isJA = false) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -924,7 +924,7 @@ export function UserPortal({ username, onSignOut }: UserPortalProps) {
                   <div>
                     <h3 className="text-lg font-bold text-slate-800 dark:text-white border-b border-slate-200 dark:border-gray-700 pb-2 mb-4 mt-6">Signature Attachment</h3>
                     <div className="border-2 border-dashed border-slate-300 dark:border-gray-600 rounded-xl p-8 text-center cursor-pointer hover:bg-slate-50 dark:hover:bg-gray-700/50">
-                      <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, true)} className="hidden" id="ja-signature-upload" />
+                      <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e)} className="hidden" id="ja-signature-upload" />
                       <label htmlFor="ja-signature-upload" className="cursor-pointer">
                         <div className="flex flex-col items-center gap-3">
                           <div className="w-14 h-14 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">

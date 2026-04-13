@@ -1,6 +1,6 @@
 "use client";
 
-import type { FormEvent, ReactNode } from "react";
+import type { FormEvent } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActionModal } from "@/components/portal/action-modal";
 import { DashboardShell } from "@/components/portal/dashboard-shell";
@@ -8,7 +8,6 @@ import { UserPortal } from "@/components/portal/user-portal";
 import {
   authenticate,
   CREDENTIALS,
-  type AuthCredentials,
   type UserRole,
 } from "@/lib/auth-credentials";
 import {
