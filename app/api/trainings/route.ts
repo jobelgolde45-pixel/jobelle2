@@ -65,11 +65,13 @@ export async function GET(request: NextRequest) {
         outline: p.outline,
         targetAudience: p.target_audience,
         provider: p.service_provider,
-        mode: p.delivery_mode,
+        mode: p.catalog_type === "self-paced" ? "self-paced" : p.catalog_type === "out-of-house" ? "out-of-house" : "in-house",
+        trainingType: p.catalog_type === "out-of-house" ? "out-of-house" : "in-house",
         cost: p.cost_text,
         externalLink: p.external_link,
         image: p.image_url,
         isActive: p.is_active === 1,
+        createdAt: p.created_at,
       })),
     });
   } catch (error) {

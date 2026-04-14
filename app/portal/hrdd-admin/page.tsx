@@ -20,7 +20,7 @@ import {
   Eye,
   Download,
 } from "lucide-react";
-import { fetchTrainings, fetchNominations, createNomination, updateNomination, fetchUsers, createUser, fetchJobAnalysisForms, fetchIdp, updateIdp, createCertificate } from "@/lib/api-client";
+import { fetchTrainings, fetchNominations, createNomination, updateNomination, fetchUsers, createUser, fetchJobAnalysisForms, fetchIdp, updateIdp, createCertificate, createTraining } from "@/lib/api-client";
 import type { NominationForm, TrainingProgram, LocalTravelOrder, MemoDirective, TrainingType } from "@/types/portal";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -230,35 +230,24 @@ export default function HRDDAdminPortalPage() {
 
   const handleCreateTraining = async (e: React.FormEvent) => {
     e.preventDefault();
-    const training: TrainingProgram = {
-      id: `training_${Date.now()}`,
-      title: newTraining.title || "",
-      description: newTraining.description || "",
-      duration: newTraining.duration || "",
-      level: newTraining.level || "All Levels",
-      mode: newTraining.mode || "in-house",
-      trainingType: newTraining.trainingType as TrainingType || "in-house",
-      competencyType: newTraining.competencyType || "core",
-      cost: newTraining.cost || "Free",
-      isActive: true,
-      createdAt: new Date().toISOString(),
-    };
     try {
-      // Note: API may not have createTraining endpoint yet, adding to local state
-      setTrainings((prev) => [...prev, training]);
-      setShowCreateTraining(false);
-      setNewTraining({
-        title: "",
-        description: "",
-        duration: "",
-        level: "All Levels",
-        mode: "in-house",
-        trainingType: "in-house",
-        competencyType: "core",
-        cost: "",
-        isActive: true,
+      const result = await createTraining({
+        title: newTraining.title || "",
+        description: newTraining.description || "",
+        catalogType: newTraining.trainingType || "in-house",
+        competencyType: newTraining.competencyType,
+        level: newTraining.level,
+        duration: newTraining.duration,
+        mode: newTraining.mode,
+        cost: newTraining.cost,
       });
-      alert("Training program created!");
+      if (result.success) {
+        const refreshed = await fetchTrainings();
+        if (refreshed.success) setTrainings(refreshed.data);
+        setShowCreateTraining(false);
+        setNewTraining({ title: "", description: "", duration: "", level: "All Levels", mode: "in-house", trainingType: "in-house", competencyType: "core", cost: "", isActive: true });
+        alert("Training program created!");
+      }
     } catch (error) {
       console.error("Failed to create training:", error);
       alert("Failed to create training.");

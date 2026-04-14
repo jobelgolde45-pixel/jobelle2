@@ -37,6 +37,24 @@ export async function fetchTrainings(filters?: {
   );
 }
 
+export async function createTraining(data: {
+  title: string;
+  description: string;
+  catalogType: string;
+  competencyType?: string;
+  level?: string;
+  duration?: string;
+  provider?: string;
+  mode?: string;
+  cost?: string;
+}) {
+  const code = `TR-${Date.now()}`;
+  return apiFetch<{ success: boolean }>("/api/trainings", {
+    method: "POST",
+    body: JSON.stringify({ code, ...data }),
+  });
+}
+
 // Nominations APIs
 export async function fetchNominations(filters?: {
   status?: string;

@@ -54,7 +54,11 @@ export function Modal({
 
     document.addEventListener("keydown", handleEscape);
     document.body.style.overflow = "hidden";
-    const timer = window.setTimeout(() => closeButtonRef.current?.focus(), 60);
+    const timer = window.setTimeout(() => {
+      if (!overlayRef.current?.contains(document.activeElement)) {
+        closeButtonRef.current?.focus();
+      }
+    }, 60);
 
     return () => {
       window.clearTimeout(timer);
