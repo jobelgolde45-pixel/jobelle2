@@ -182,10 +182,9 @@ export default function LoginPage() {
                       variants={cardVariants}
                       whileHover="hover"
                       whileTap="tap"
-                      transition={cardTransition}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
+                      transition={{ ...cardTransition, delay: index * 0.1 }}
                       className="group relative bg-white rounded-2xl p-6 text-left shadow-lg hover:shadow-xl border border-gray-100 overflow-hidden"
 
 

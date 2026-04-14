@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, useClock } from "@/lib/hooks";
 import { Card, CardHeader, CardTitle, CardContent, StatCard, Badge, Button, Modal } from "@/components/ui";
@@ -20,84 +20,8 @@ import {
   Target,
   AlertCircle,
 } from "lucide-react";
+import { fetchTrainings, fetchNominations, createNomination, createMisRequest } from "@/lib/api-client";
 import type { TrainingProgram, NominationForm, TrainingType, QualificationCriteria } from "@/types/portal";
-
-const mockTrainings: TrainingProgram[] = [
-  {
-    id: "1",
-    title: "Human-Centered Leadership: Redefining Success with Well-Being in Mind",
-    description: "This course empowers leaders to embrace a people-first approach to leadership by integrating well-being, empathy, and purpose.",
-    duration: "2 days",
-    level: "All Employees",
-    mode: "in-house",
-    trainingType: "in-house",
-    competencyType: "leadership",
-    cost: "Sponsored",
-    dateStart: "2026-04-10",
-    dateEnd: "2026-04-11",
-    provider: "Civil Service Learning Institute",
-    venue: "MS Teams",
-    isActive: true,
-    createdAt: "2026-03-01",
-    qualificationCriteria: {
-      targetLevel: "Supervisory and above",
-      description: "Recommended for employees being prepared for supervisory assignments.",
-    },
-  },
-  {
-    id: "2",
-    title: "Team Building & Collaboration",
-    description: "Strengthen team dynamics and enhance collaborative work environments through practical exercises.",
-    duration: "1 day",
-    level: "All Levels",
-    mode: "in-house",
-    trainingType: "in-house",
-    competencyType: "core",
-    cost: "Internal",
-    dateStart: "2026-04-21",
-    provider: "DOTr HRDD",
-    venue: "DOTr Multi-Purpose Hall",
-    isActive: true,
-    createdAt: "2026-03-01",
-  },
-  {
-    id: "3",
-    title: "Industry Conference 2025",
-    description: "Network with industry leaders and gain insights into emerging trends impacting the transportation sector.",
-    duration: "3 days",
-    level: "Advanced",
-    mode: "out-of-house",
-    trainingType: "out-of-house",
-    competencyType: "functional",
-    cost: "Php 15,000",
-    dateStart: "2026-05-02",
-    dateEnd: "2026-05-04",
-    provider: "External Provider",
-    venue: "TBD",
-    isActive: true,
-    createdAt: "2026-03-01",
-    qualificationCriteria: {
-      offices: ["Planning Division", "Air Transportation Planning Division", "Rail Transportation Planning Division"],
-      salaryGrades: ["18", "19", "20", "21", "22", "23", "24"],
-      employmentStatus: ["permanent"],
-      targetLevel: "Senior Staff (SG 18 and above)",
-      description: "Priority given to staff involved in transportation planning activities.",
-    },
-  },
-  {
-    id: "4",
-    title: "Service Excellence: A Guide to RA 11032 Citizen's Charter",
-    description: "Master the protocols of the Ease of Doing Business Act for efficient government service delivery.",
-    duration: "Self-Paced",
-    level: "All Levels",
-    mode: "self-paced",
-    trainingType: "in-house",
-    competencyType: "core",
-    cost: "Free",
-    isActive: true,
-    createdAt: "2026-03-01",
-  },
-];
 
 const OFFICES = [
   { value: "hrdd", label: "Human Resource Development Division" },
@@ -155,14 +79,38 @@ export default function EmployeePortalPage() {
   const [showQualificationModal, setShowQualificationModal] = useState(false);
   const [selectedTraining, setSelectedTraining] = useState<TrainingProgram | null>(null);
   const [selectedQualification, setSelectedQualification] = useState<QualificationCriteria | null>(null);
+  const [trainings, setTrainings] = useState<TrainingProgram[]>([]);
   const [nominations, setNominations] = useState<NominationForm[]>([]);
   const [misRequests, setMisRequests] = useState<MisRequest[]>([]);
   const [postTrainingItems, setPostTrainingItems] = useState<PostTrainingItem[]>([]);
   const [trainingFilter, setTrainingFilter] = useState<TrainingType | "all">("all");
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredTrainings = trainingFilter === "all" 
-    ? mockTrainings 
-    : mockTrainings.filter(t => t.trainingType === trainingFilter);
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [trainingsResult, nominationsResult] = await Promise.all([
+          fetchTrainings(),
+          user?.id ? fetchNominations({ userId: user.id }) : Promise.resolve({ success: true, data: [] }),
+        ]);
+        if (trainingsResult.success) {
+          setTrainings(trainingsResult.data);
+        }
+        if (nominationsResult.success) {
+          setNominations(nominationsResult.data as NominationForm[]);
+        }
+      } catch (error) {
+        console.error("Failed to load data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadData();
+  }, [user?.id]);
+
+  const filteredTrainings = trainingFilter === "all"
+    ? trainings
+    : trainings.filter(t => t.trainingType === trainingFilter);
 
   const handleRegisterTraining = (training: TrainingProgram) => {
     setSelectedTraining(training);
@@ -174,7 +122,7 @@ export default function EmployeePortalPage() {
     setShowQualificationModal(true);
   };
 
-  const handleSubmitNomination = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmitNomination = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
     const formData = new FormData(form);
@@ -204,13 +152,19 @@ export default function EmployeePortalPage() {
       updatedAt: new Date().toISOString(),
     };
 
-    setNominations((prev) => [...prev, nomination]);
-    setShowNominationModal(false);
-    setShowScsPreviewModal(true);
-    setSelectedTraining(null);
+    try {
+      await createNomination(nomination);
+      setNominations((prev) => [...prev, nomination]);
+      setShowNominationModal(false);
+      setShowScsPreviewModal(true);
+      setSelectedTraining(null);
+    } catch (error) {
+      console.error("Failed to submit nomination:", error);
+      alert("Failed to submit nomination. Please try again.");
+    }
   };
 
-  const handleSubmitMisRequest = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmitMisRequest = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
     const formData = new FormData(form);
@@ -224,9 +178,15 @@ export default function EmployeePortalPage() {
       requestedDate: new Date().toISOString().split("T")[0],
     };
 
-    setMisRequests((prev) => [...prev, request]);
-    setShowMisModal(false);
-    alert("MIS Assistance Request submitted successfully!");
+    try {
+      await createMisRequest(request);
+      setMisRequests((prev) => [...prev, request]);
+      setShowMisModal(false);
+      alert("MIS Assistance Request submitted successfully!");
+    } catch (error) {
+      console.error("Failed to submit MIS request:", error);
+      alert("Failed to submit MIS request. Please try again.");
+    }
   };
 
   const getTrainingTypeBadge = (type?: TrainingType) => {
@@ -370,7 +330,7 @@ export default function EmployeePortalPage() {
             {activeSection === "dashboard" && (
               <div className="space-y-8">
                 <div className="grid gap-6 md:grid-cols-4">
-                  <StatCard label="Available Trainings" value={mockTrainings.length} note="Active Programs" accentColor="bg-blue-100 dark:bg-blue-900/25" />
+                  <StatCard label="Available Trainings" value={trainings.length} note="Active Programs" accentColor="bg-blue-100 dark:bg-blue-900/25" />
                   <StatCard label="My Nominations" value={nominations.length} note="Submitted" accentColor="bg-emerald-100 dark:bg-emerald-900/25" />
                   <StatCard label="Pending" value={nominations.filter((n) => n.status === "pending_supervisor").length} note="Awaiting Review" accentColor="bg-amber-100 dark:bg-amber-900/25" />
                   <StatCard label="Approved" value={nominations.filter((n) => n.status === "approved").length} note="Completed" isHighlight />
@@ -430,7 +390,7 @@ export default function EmployeePortalPage() {
                     <CardTitle>Recent Trainings</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {mockTrainings.slice(0, 3).map((training) => (
+                    {trainings.slice(0, 3).map((training) => (
                       <div key={training.id} className="flex items-center justify-between rounded-xl border border-slate-100 p-4 dark:border-slate-800">
                         <div className="flex items-center gap-4">
                           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400">

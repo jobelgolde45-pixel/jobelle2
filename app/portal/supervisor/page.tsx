@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, useClock } from "@/lib/hooks";
 import { Card, CardHeader, CardTitle, CardContent, StatCard, Badge, Button } from "@/components/ui";
@@ -12,87 +12,87 @@ import {
   Clock,
   ChevronRight,
 } from "lucide-react";
+import { fetchNominations, updateNomination } from "@/lib/api-client";
 import type { NominationForm } from "@/types/portal";
-
-const mockNominations: NominationForm[] = [
-  {
-    id: "1",
-    userId: "user_1",
-    trainingId: "1",
-    trainingTitle: "Human-Centered Leadership",
-    trainingDate: "2026-04-10",
-    dateFiled: "2026-03-18",
-    competencyType: "leadership",
-    venue: "MS Teams",
-    participantName: "Mia Dela Cruz",
-    participantIdNumber: "DOTR-18419",
-    participantEmail: "mia.delacruz@dotr.gov.ph",
-    participantPosition: "Administrative Officer V",
-    participantOffice: "HRDD",
-    participantSupervisor: "Josefa B. Neri",
-    participantSalaryGrade: "18",
-    participantYearsOfService: "7 years",
-    participantContact: "09123456789",
-    participantGender: "Female",
-    justification: "For leadership development",
-    status: "pending_supervisor",
-    createdAt: "2026-03-18",
-    updatedAt: "2026-03-18",
-  },
-  {
-    id: "2",
-    userId: "user_2",
-    trainingId: "2",
-    trainingTitle: "Team Building & Collaboration",
-    trainingDate: "2026-04-21",
-    dateFiled: "2026-03-20",
-    competencyType: "core",
-    venue: "DOTr Hall",
-    participantName: "Renz Santos",
-    participantIdNumber: "DOTR-22041",
-    participantEmail: "renz.santos@dotr.gov.ph",
-    participantPosition: "Administrative Officer IV",
-    participantOffice: "Admin",
-    participantSupervisor: "Lourdes T. Aquino",
-    participantSalaryGrade: "15",
-    participantYearsOfService: "4 years",
-    participantContact: "09123456790",
-    participantGender: "Male",
-    justification: "For team development",
-    status: "pending_supervisor",
-    createdAt: "2026-03-20",
-    updatedAt: "2026-03-20",
-  },
-];
 
 export default function SupervisorPortalPage() {
   const { user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const { formatClock, formatDate } = useClock();
-  const [nominations, setNominations] = useState<NominationForm[]>(mockNominations);
+  const [nominations, setNominations] = useState<NominationForm[]>([]);
   const [activeSection, setActiveSection] = useState<"dashboard" | "nominations">("dashboard");
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadNominations() {
+      try {
+        const result = await fetchNominations();
+        if (result.success) {
+          setNominations(result.data as NominationForm[]);
+        }
+      } catch (error) {
+        console.error("Failed to load nominations:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadNominations();
+  }, []);
+
+  const persistNomination = useCallback(async (nomination: NominationForm) => {
+    try {
+      await updateNomination({
+        id: nomination.id,
+        status: nomination.status,
+        updatedAt: nomination.updatedAt,
+      });
+    } catch (error) {
+      console.error("Failed to update nomination:", error);
+    }
+  }, []);
 
   const pendingNominations = nominations.filter((n) => n.status === "pending_supervisor");
   const approvedNominations = nominations.filter((n) => n.status === "approved");
   const rejectedNominations = nominations.filter((n) => n.status === "disapproved");
 
-  const handleApprove = (id: string) => {
-    setNominations((prev) =>
-      prev.map((n) =>
-        n.id === id ? { ...n, status: "approved" as const, updatedAt: new Date().toISOString() } : n
-      )
-    );
-    alert("Nomination approved!");
+  const handleApprove = async (id: string) => {
+    const updated = nominations.find((n) => n.id === id);
+    if (!updated) return;
+
+    const nomination = {
+      ...updated,
+      status: "approved" as const,
+      updatedAt: new Date().toISOString(),
+    };
+
+    try {
+      await updateNomination({ id, status: "approved", updatedAt: nomination.updatedAt });
+      setNominations((prev) => prev.map((n) => (n.id === id ? nomination : n)));
+      alert("Nomination approved!");
+    } catch (error) {
+      console.error("Failed to approve nomination:", error);
+      alert("Failed to approve nomination.");
+    }
   };
 
-  const handleReject = (id: string) => {
+  const handleReject = async (id: string) => {
     if (!window.confirm("Are you sure you want to reject this nomination?")) return;
-    setNominations((prev) =>
-      prev.map((n) =>
-        n.id === id ? { ...n, status: "disapproved" as const, updatedAt: new Date().toISOString() } : n
-      )
-    );
-    alert("Nomination rejected!");
+
+    const updated = nominations.find((n) => n.id === id);
+    if (!updated) return;
+
+    try {
+      await updateNomination({ id, status: "disapproved", updatedAt: new Date().toISOString() });
+      setNominations((prev) =>
+        prev.map((n) =>
+          n.id === id ? { ...n, status: "disapproved" as const, updatedAt: new Date().toISOString() } : n
+        )
+      );
+      alert("Nomination rejected!");
+    } catch (error) {
+      console.error("Failed to reject nomination:", error);
+      alert("Failed to reject nomination.");
+    }
   };
 
   return (

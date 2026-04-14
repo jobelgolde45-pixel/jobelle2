@@ -13,12 +13,11 @@ import {
   getInitials,
   getUserNotifications,
   OFFICES,
-  readUserDatabase,
   SALARY_GRADES,
   TRAINING_CATALOG,
   TRAINING_COLORS,
-  writeUserDatabase,
 } from "@/lib/user-portal-data";
+import { fetchNominations, createNomination, createJobAnalysisForm, createMisRequest, fetchMessages, createMessage, saveGedsi } from "@/lib/api-client";
 import { SelfPacedPortal } from "@/components/portal/self-paced-portal";
 
 const THEME_KEY = "user-portal-theme";
@@ -29,9 +28,8 @@ interface UserPortalProps {
 }
 
 export function UserPortal({ username, onSignOut }: UserPortalProps) {
-  const [database, setDatabase] = useState<UserDatabase>(() =>
-    typeof window === "undefined" ? { applications: [] } : readUserDatabase()
-  );
+  const [database, setDatabase] = useState<UserDatabase>(() => ({ applications: [] }));
+  const [isLoading, setIsLoading] = useState(true);
   const [isDark, setIsDark] = useState(() => {
     if (typeof window === "undefined") return false;
     const stored = localStorage.getItem(THEME_KEY);
@@ -56,9 +54,24 @@ export function UserPortal({ username, onSignOut }: UserPortalProps) {
     return () => window.clearInterval(tick);
   }, [isDark]);
 
+  useEffect(() => {
+    async function loadNominations() {
+      try {
+        const result = await fetchNominations({ userId: username });
+        if (result.success) {
+          setDatabase({ applications: result.data as UserApplication[] });
+        }
+      } catch (error) {
+        console.error("Failed to load nominations:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadNominations();
+  }, [username]);
+
   const persistDatabase = useCallback((next: UserDatabase) => {
     setDatabase(next);
-    writeUserDatabase(next);
   }, []);
 
   const handleThemeToggle = useCallback(() => {
@@ -149,7 +162,7 @@ export function UserPortal({ username, onSignOut }: UserPortalProps) {
     reader.readAsDataURL(file);
   };
 
-  const handleSubmitNomination = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmitNomination = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
     const formData = new FormData(form);
@@ -182,16 +195,22 @@ export function UserPortal({ username, onSignOut }: UserPortalProps) {
       read: false,
     };
 
-    const nextDb = {
-      ...database,
-      submitted: (database.submitted || 0) + 1,
-      applications: [...(database.applications || []), application],
-    };
-    persistDatabase(nextDb);
-    alert("Nomination submitted successfully!");
-    form.reset();
-    setUploadedSignature(null);
-    setActiveSection("trainings-main");
+    try {
+      await createNomination(application);
+      const nextDb = {
+        ...database,
+        submitted: (database.submitted || 0) + 1,
+        applications: [...(database.applications || []), application],
+      };
+      persistDatabase(nextDb);
+      alert("Nomination submitted successfully!");
+      form.reset();
+      setUploadedSignature(null);
+      setActiveSection("trainings-main");
+    } catch (error) {
+      console.error("Failed to submit nomination:", error);
+      alert("Failed to submit nomination. Please try again.");
+    }
   };
 
   const getSectionTitle = (section: ContentSection) => {

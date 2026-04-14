@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, useClock } from "@/lib/hooks";
 import { Card, CardHeader, CardTitle, CardContent, StatCard, Badge, Button, Modal } from "@/components/ui";
@@ -20,74 +20,8 @@ import {
   Eye,
   Download,
 } from "lucide-react";
+import { fetchTrainings, fetchNominations, createNomination, updateNomination, fetchUsers, createUser } from "@/lib/api-client";
 import type { NominationForm, TrainingProgram, LocalTravelOrder, MemoDirective, TrainingType } from "@/types/portal";
-
-const mockNominations: NominationForm[] = [
-  {
-    id: "1",
-    userId: "user_1",
-    trainingId: "1",
-    trainingTitle: "Human-Centered Leadership: Redefining Success with Well-Being in Mind",
-    trainingDate: "2026-04-10",
-    dateFiled: "2026-03-18",
-    competencyType: "leadership",
-    venue: "MS Teams",
-    participantName: "Mia Dela Cruz",
-    participantIdNumber: "DOTR-18419",
-    participantEmail: "mia.delacruz@dotr.gov.ph",
-    participantPosition: "Administrative Officer V",
-    participantOffice: "HRDD",
-    participantSupervisor: "Josefa B. Neri",
-    participantSalaryGrade: "18",
-    participantYearsOfService: "7 years",
-    participantContact: "09123456789",
-    participantGender: "Female",
-    justification: "For leadership development and team engagement planning.",
-    status: "pending_hrdd",
-    createdAt: "2026-03-18",
-    updatedAt: "2026-03-18",
-  },
-  {
-    id: "2",
-    userId: "user_2",
-    trainingId: "3",
-    trainingTitle: "Industry Conference 2025",
-    trainingDate: "2026-05-02",
-    dateFiled: "2026-03-20",
-    competencyType: "functional",
-    venue: "TBD",
-    participantName: "Renz Santos",
-    participantIdNumber: "DOTR-22041",
-    participantEmail: "renz.santos@dotr.gov.ph",
-    participantPosition: "Planning Officer III",
-    participantOffice: "Planning Division",
-    participantSupervisor: "Catherine M. Lim",
-    participantSalaryGrade: "18",
-    participantYearsOfService: "4 years",
-    participantContact: "09198765432",
-    participantGender: "Male",
-    justification: "For exposure to emerging transportation trends.",
-    status: "pending_hrdd",
-    createdAt: "2026-03-20",
-    updatedAt: "2026-03-20",
-  },
-];
-
-const mockTrainings: TrainingProgram[] = [
-  {
-    id: "1",
-    title: "Human-Centered Leadership: Redefining Success with Well-Being in Mind",
-    description: "Leadership training for supervisors focusing on well-being integration.",
-    duration: "2 days",
-    level: "All Employees",
-    mode: "in-house",
-    trainingType: "in-house",
-    competencyType: "leadership",
-    cost: "Sponsored",
-    isActive: true,
-    createdAt: "2026-03-01",
-  },
-];
 
 interface EmployeeAccount {
   id: string;
@@ -99,12 +33,6 @@ interface EmployeeAccount {
   status: "active" | "inactive";
   createdAt: string;
 }
-
-const mockAccounts: EmployeeAccount[] = [
-  { id: "1", name: "Mia Dela Cruz", email: "mia.delacruz@dotr.gov.ph", position: "Administrative Officer V", office: "HRDD", role: "employee", status: "active", createdAt: "2026-01-15" },
-  { id: "2", name: "Renz Santos", email: "renz.santos@dotr.gov.ph", position: "Planning Officer III", office: "Planning Division", role: "employee", status: "active", createdAt: "2026-01-15" },
-  { id: "3", name: "Josefa B. Neri", email: "josefa.neri@dotr.gov.ph", position: "Division Chief", office: "HRDD", role: "supervisor", status: "active", createdAt: "2026-01-10" },
-];
 
 const OFFICES = [
   { value: "hrdd", label: "Human Resource Development Division" },
@@ -120,9 +48,9 @@ export default function HRDDAdminPortalPage() {
   const { user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const { formatClock, formatDate } = useClock();
-  const [nominations, setNominations] = useState<NominationForm[]>(mockNominations);
-  const [trainings, setTrainings] = useState<TrainingProgram[]>(mockTrainings);
-  const [accounts, setAccounts] = useState<EmployeeAccount[]>(mockAccounts);
+  const [nominations, setNominations] = useState<NominationForm[]>([]);
+  const [trainings, setTrainings] = useState<TrainingProgram[]>([]);
+  const [accounts, setAccounts] = useState<EmployeeAccount[]>([]);
   const [ltos, setLtos] = useState<LocalTravelOrder[]>([]);
   const [memos, setMemos] = useState<MemoDirective[]>([]);
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
@@ -132,6 +60,7 @@ export default function HRDDAdminPortalPage() {
   const [showMemoModal, setShowMemoModal] = useState(false);
   const [selectedNomination, setSelectedNomination] = useState<NominationForm | null>(null);
   const [evaluationRemarks, setEvaluationRemarks] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   const [newTraining, setNewTraining] = useState<Partial<TrainingProgram>>({
     title: "",
@@ -153,29 +82,67 @@ export default function HRDDAdminPortalPage() {
     role: "employee",
   });
 
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [nominationsResult, trainingsResult, usersResult] = await Promise.all([
+          fetchNominations(),
+          fetchTrainings(),
+          fetchUsers(),
+        ]);
+        if (nominationsResult.success) {
+          setNominations(nominationsResult.data as NominationForm[]);
+        }
+        if (trainingsResult.success) {
+          setTrainings(trainingsResult.data);
+        }
+        if (usersResult.success) {
+          setAccounts(usersResult.data as EmployeeAccount[]);
+        }
+      } catch (error) {
+        console.error("Failed to load data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
   const pendingNominations = nominations.filter((n) => n.status === "pending_hrdd");
   const approvedNominations = nominations.filter((n) => n.status === "approved");
   const evaluations = nominations.filter((n) => n.status === "pending_hrdd" || n.status === "approved");
 
-  const handleApprove = (id: string) => {
-    setNominations((prev) =>
-      prev.map((n) =>
-        n.id === id ? { ...n, status: "approved" as const, updatedAt: new Date().toISOString() } : n
-      )
-    );
-    alert("Nomination approved and forwarded to Signatory!");
+  const handleApprove = async (id: string) => {
+    try {
+      await updateNomination({ id, status: "approved", updatedAt: new Date().toISOString() });
+      setNominations((prev) =>
+        prev.map((n) =>
+          n.id === id ? { ...n, status: "approved" as const, updatedAt: new Date().toISOString() } : n
+        )
+      );
+      alert("Nomination approved and forwarded to Signatory!");
+    } catch (error) {
+      console.error("Failed to approve nomination:", error);
+      alert("Failed to approve nomination.");
+    }
   };
 
-  const handleReject = (id: string) => {
+  const handleReject = async (id: string) => {
     if (!window.confirm("Are you sure you want to reject this nomination?")) return;
-    setNominations((prev) =>
-      prev.map((n) =>
-        n.id === id ? { ...n, status: "disapproved" as const, updatedAt: new Date().toISOString() } : n
-      )
-    );
+    try {
+      await updateNomination({ id, status: "disapproved", updatedAt: new Date().toISOString() });
+      setNominations((prev) =>
+        prev.map((n) =>
+          n.id === id ? { ...n, status: "disapproved" as const, updatedAt: new Date().toISOString() } : n
+        )
+      );
+    } catch (error) {
+      console.error("Failed to reject nomination:", error);
+      alert("Failed to reject nomination.");
+    }
   };
 
-  const handleEvaluate = (nom: NominationForm) => {
+  const handleEvaluate = async (nom: NominationForm) => {
     setSelectedNomination(nom);
     setShowEvaluationModal(true);
   };
@@ -208,7 +175,7 @@ export default function HRDDAdminPortalPage() {
     setShowMemoModal(true);
   };
 
-  const handleApproveMemo = (memoId: string) => {
+  const handleApproveMemo = async (memoId: string) => {
     setMemos((prev) =>
       prev.map((m) =>
         m.id === memoId ? { ...m, status: "approved" as const, updatedAt: new Date().toISOString() } : m
@@ -217,7 +184,7 @@ export default function HRDDAdminPortalPage() {
     alert("Memo directive approved and forwarded to Signatory!");
   };
 
-  const handleCreateTraining = (e: React.FormEvent) => {
+  const handleCreateTraining = async (e: React.FormEvent) => {
     e.preventDefault();
     const training: TrainingProgram = {
       id: `training_${Date.now()}`,
@@ -232,23 +199,29 @@ export default function HRDDAdminPortalPage() {
       isActive: true,
       createdAt: new Date().toISOString(),
     };
-    setTrainings((prev) => [...prev, training]);
-    setShowCreateTraining(false);
-    setNewTraining({
-      title: "",
-      description: "",
-      duration: "",
-      level: "All Levels",
-      mode: "in-house",
-      trainingType: "in-house",
-      competencyType: "core",
-      cost: "",
-      isActive: true,
-    });
-    alert("Training program created!");
+    try {
+      // Note: API may not have createTraining endpoint yet, adding to local state
+      setTrainings((prev) => [...prev, training]);
+      setShowCreateTraining(false);
+      setNewTraining({
+        title: "",
+        description: "",
+        duration: "",
+        level: "All Levels",
+        mode: "in-house",
+        trainingType: "in-house",
+        competencyType: "core",
+        cost: "",
+        isActive: true,
+      });
+      alert("Training program created!");
+    } catch (error) {
+      console.error("Failed to create training:", error);
+      alert("Failed to create training.");
+    }
   };
 
-  const handleCreateAccount = (e: React.FormEvent) => {
+  const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     const account: EmployeeAccount = {
       id: `acc_${Date.now()}`,
@@ -260,10 +233,16 @@ export default function HRDDAdminPortalPage() {
       status: "active",
       createdAt: new Date().toISOString().split("T")[0],
     };
-    setAccounts((prev) => [...prev, account]);
-    setShowCreateAccount(false);
-    setNewAccount({ name: "", email: "", position: "", office: "", role: "employee" });
-    alert("Employee account created!");
+    try {
+      await createUser(account);
+      setAccounts((prev) => [...prev, account]);
+      setShowCreateAccount(false);
+      setNewAccount({ name: "", email: "", position: "", office: "", role: "employee" });
+      alert("Employee account created!");
+    } catch (error) {
+      console.error("Failed to create account:", error);
+      alert("Failed to create account.");
+    }
   };
 
   const COMPETENCY_OPTIONS = [

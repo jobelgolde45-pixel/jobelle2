@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActionModal } from "@/components/portal/action-modal";
 import { DashboardShell } from "@/components/portal/dashboard-shell";
 import { LoginScreen } from "@/components/portal/login-screen";
@@ -14,10 +14,9 @@ import {
   getInitials,
   getNotifications,
   getTrainingInfo,
-  readPortalDatabase,
   THEME_KEY,
-  writePortalDatabase,
 } from "@/lib/portal-data";
+import { fetchNominations, updateNomination } from "@/lib/api-client";
 import type {
   ActiveTab,
   ModalStage,
@@ -44,9 +43,8 @@ function openDocumentWindow(title: string, html: string) {
 }
 
 export function SignatoryPortal() {
-  const [database, setDatabase] = useState<PortalDatabase>(() =>
-    typeof window === "undefined" ? { applications: [] } : readPortalDatabase(),
-  );
+  const [database, setDatabase] = useState<PortalDatabase>(() => ({ applications: [] }));
+  const [isLoading, setIsLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isDark, setIsDark] = useState(() => {
     if (typeof window === "undefined") {
@@ -136,16 +134,34 @@ export function SignatoryPortal() {
     };
   }, [nominationApplications, pendingApplications, signedApplications]);
 
-  const persistDatabase = (nextDatabase: PortalDatabase) => {
+  const persistDatabase = useCallback(async (nextDatabase: PortalDatabase) => {
     setDatabase(nextDatabase);
-    writePortalDatabase(nextDatabase);
-  };
+    try {
+      for (const app of nextDatabase.applications) {
+        if (app.status === "Signed" || app.status === "Rejected") {
+          await updateNomination({ id: app.id, status: app.status, messages: app.messages });
+        }
+      }
+    } catch (error) {
+      console.error("Failed to persist database:", error);
+    }
+  }, []);
 
-  const refreshDatabase = () => {
-    persistDatabase(readPortalDatabase());
-  };
+  const refreshDatabase = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const result = await fetchNominations();
+      if (result.success) {
+        setDatabase({ applications: result.data as PortalApplication[] });
+      }
+    } catch (error) {
+      console.error("Failed to refresh database:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  const handleLogin = (event: FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const trimmedUsername = username.trim().toLowerCase();
@@ -155,7 +171,7 @@ export function SignatoryPortal() {
       setIsAuthenticated(true);
       setLoginError("");
       setPassword("");
-      refreshDatabase();
+      await refreshDatabase();
       return;
     }
 
@@ -192,7 +208,7 @@ export function SignatoryPortal() {
     );
   };
 
-  const handleNotificationClick = (notification: PortalNotification) => {
+  const handleNotificationClick = async (notification: PortalNotification) => {
     const target = database.applications.find(
       (application) => application.id === notification.id,
     );
@@ -209,7 +225,7 @@ export function SignatoryPortal() {
       ),
     };
 
-    persistDatabase(nextDatabase);
+    await persistDatabase(nextDatabase);
     setActiveTab("dashboard");
     setSelectedBatchTitle(target.title);
     setModalStage("idle");
@@ -282,7 +298,7 @@ export function SignatoryPortal() {
     reader.readAsDataURL(file);
   };
 
-  const handleApproveBatch = () => {
+  const handleApproveBatch = async () => {
     if (!selectedBatchTitle || !signaturePreview || selectedBatchApplications.length === 0) {
       return;
     }
@@ -318,12 +334,12 @@ export function SignatoryPortal() {
       };
     });
 
-    persistDatabase({ applications: nextApplications });
+    await persistDatabase({ applications: nextApplications });
     window.alert("Batch processed. Memos were signed and posted to the local portal records.");
     handleCloseModal();
   };
 
-  const handleDisapproveBatch = () => {
+  const handleDisapproveBatch = async () => {
     if (!selectedBatchTitle || !disapprovalReason.trim()) {
       window.alert("Please provide a reason for the batch disapproval.");
       return;
@@ -365,7 +381,7 @@ export function SignatoryPortal() {
       };
     });
 
-    persistDatabase({ applications: nextApplications });
+    await persistDatabase({ applications: nextApplications });
     window.alert("Batch disapproved.");
     handleCloseModal();
   };
