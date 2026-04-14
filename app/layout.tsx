@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans, Space_Grotesk } from "next/font/google";
+import { AuthProvider } from "@/contexts/AuthContext";
 import "./globals.css";
 
 const inter = Inter({
@@ -18,8 +19,8 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "DOTr-HRDD Signatory Portal",
-  description: "Authorized signatory dashboard for memo directives and signed archive management.",
+  title: "DOTr-HRDD Learning Management Portal",
+  description: "Department of Transportation Human Resource Development Division - Learning Management System",
 };
 
 export default function RootLayout({
@@ -33,7 +34,9 @@ export default function RootLayout({
       className={`${inter.variable} ${plusJakartaSans.variable} ${spaceGrotesk.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

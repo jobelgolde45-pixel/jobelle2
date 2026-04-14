@@ -1,10 +1,52 @@
 import type {
-  UserApplication,
   UserDatabase,
   TrainingCatalogItem,
 } from "@/types/user-portal";
 
 export const USER_DB_KEY = "DOTr_HRDD_USER_DB";
+
+export interface QualificationCriteria {
+  offices?: string[];
+  salaryGrades?: string[];
+  employmentStatus?: string[];
+  targetLevel?: string;
+  description?: string;
+}
+
+export interface MisAssistanceRequest {
+  id: number;
+  requestType: "storage" | "manpower";
+  requestDetails: string;
+  priority: "low" | "medium" | "high";
+  status: "pending" | "processing" | "completed";
+  requestedBy: string;
+  requestedDate: string;
+  resolutionDate?: string;
+  remarks?: string;
+}
+
+export interface PostTrainingRequirement {
+  id: number;
+  trainingTitle: string;
+  requirements: Array<{
+    item: string;
+    completed: boolean;
+    completedDate?: string;
+  }>;
+  completionDate?: string;
+  status: "pending" | "completed" | "not_applicable";
+}
+
+export const MIS_REQUEST_TYPES = [
+  { value: "storage", label: "Storage Request" },
+  { value: "manpower", label: "Manpower Request" },
+];
+
+export const MIS_PRIORITIES = [
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
+];
 
 export const OFFICES = [
   "Human Resource Development Division - Mary Grace L. Escoto",
@@ -62,13 +104,13 @@ export const TRAINING_CATALOG: Record<string, TrainingCatalogItem[]> = {
           "This course empowers leaders to embrace a people-first approach to leadership by integrating well-being, empathy, and purpose into their management style. Participants will explore how human-centered leadership fosters trust, resilience, and sustainable performance.",
         competencies: "Crafting and Nurturing High-Performing Organizations",
         targetOffices: "All Employees",
-        serviceProvider: "Selected Learning Service Provider",
+        serviceProvider: "Civil Service Learning Institute",
         mode: "Virtual Training",
         cost: "Sponsored",
-        contact: "Jose Mari A. Hulleza",
-        deadline: "03 DECEMBER 2025",
+        contact: "HRDD",
+        deadline: "2026-04-05",
         competencyType: "leadership",
-        trainingDate: "December 4-5, 2025",
+        trainingDate: "April 10-11, 2026",
       },
     },
     {
@@ -76,7 +118,16 @@ export const TRAINING_CATALOG: Record<string, TrainingCatalogItem[]> = {
       duration: "1 day",
       level: "All Levels",
       description:
-        "Strengthen team dynamics and enhance collaborative work environments.",
+        "Strengthen team dynamics and enhance collaborative work environments through practical exercises.",
+      details: {
+        competencies: "Teamwork",
+        serviceProvider: "DOTr HRDD",
+        mode: "In-Person",
+        cost: "Internal",
+        targetOffices: "All Offices",
+        competencyType: "core",
+        trainingDate: "TBD",
+      },
     },
     {
       title: "Effective Communication Skills",
@@ -84,6 +135,15 @@ export const TRAINING_CATALOG: Record<string, TrainingCatalogItem[]> = {
       level: "Beginner",
       description:
         "Master professional communication techniques for workplace success.",
+      details: {
+        competencies: "Communication",
+        serviceProvider: "DOTr HRDD",
+        mode: "In-Person",
+        cost: "Internal",
+        targetOffices: "All Offices",
+        competencyType: "core",
+        trainingDate: "TBD",
+      },
     },
   ],
   "out-of-house": [
@@ -92,7 +152,16 @@ export const TRAINING_CATALOG: Record<string, TrainingCatalogItem[]> = {
       duration: "3 days",
       level: "Advanced",
       description:
-        "Network with industry leaders and gain insights into emerging trends.",
+        "Network with industry leaders and gain insights into emerging trends impacting the transportation sector.",
+      details: {
+        competencies: "Technical",
+        serviceProvider: "External Provider",
+        mode: "Conference",
+        cost: "Php 15,000",
+        targetOffices: "Senior Staff",
+        competencyType: "functional",
+        trainingDate: "May 2026",
+      },
     },
     {
       title: "Professional Development Seminar",
@@ -100,6 +169,15 @@ export const TRAINING_CATALOG: Record<string, TrainingCatalogItem[]> = {
       level: "All Levels",
       description:
         "Enhance your career with cutting-edge professional development strategies.",
+      details: {
+        competencies: "Leadership",
+        serviceProvider: "Civil Service Institute",
+        mode: "Seminar",
+        cost: "Sponsored",
+        targetOffices: "All Offices",
+        competencyType: "leadership",
+        trainingDate: "June 2026",
+      },
     },
   ],
   "self-paced": [
@@ -112,6 +190,14 @@ export const TRAINING_CATALOG: Record<string, TrainingCatalogItem[]> = {
       image: "https://lh3.googleusercontent.com/d/1up9Yd6ztQT6QHmglkK_tLqyK4aPviOEb",
       buttonText: "Start Your Learning",
       link: "https://hrdd-ldu.github.io/dotr_citizen-s_charter/",
+      details: {
+        competencies: "Public Service",
+        serviceProvider: "ARTA Academy",
+        mode: "Online",
+        cost: "Free",
+        targetOffices: "All Offices",
+        competencyType: "functional",
+      },
     },
     {
       title: "The Influence of Digitalization on Psychological Well-Being",
@@ -122,6 +208,14 @@ export const TRAINING_CATALOG: Record<string, TrainingCatalogItem[]> = {
       image: "https://lh3.googleusercontent.com/d/1kZ1xFHEQcAQu29gcwCawLRIjlSaNP7oU",
       buttonText: "Start Your Learning",
       link: "https://hrdd-ldu.github.io/dotr_digital_wellness/",
+      details: {
+        competencies: "Digital Wellness",
+        serviceProvider: "HRDD",
+        mode: "Online",
+        cost: "Free",
+        targetOffices: "All Offices",
+        competencyType: "core",
+      },
     },
   ],
 };

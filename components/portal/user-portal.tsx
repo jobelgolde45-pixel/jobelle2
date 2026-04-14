@@ -13,12 +13,11 @@ import {
   getInitials,
   getUserNotifications,
   OFFICES,
-  readUserDatabase,
   SALARY_GRADES,
   TRAINING_CATALOG,
   TRAINING_COLORS,
-  writeUserDatabase,
 } from "@/lib/user-portal-data";
+import { fetchNominations, createNomination, createJobAnalysisForm, createMisRequest, fetchMessages, createMessage, saveGedsi } from "@/lib/api-client";
 import { SelfPacedPortal } from "@/components/portal/self-paced-portal";
 
 const THEME_KEY = "user-portal-theme";
@@ -29,9 +28,8 @@ interface UserPortalProps {
 }
 
 export function UserPortal({ username, onSignOut }: UserPortalProps) {
-  const [database, setDatabase] = useState<UserDatabase>(() =>
-    typeof window === "undefined" ? { applications: [] } : readUserDatabase()
-  );
+  const [database, setDatabase] = useState<UserDatabase>(() => ({ applications: [] }));
+  const [isLoading, setIsLoading] = useState(true);
   const [isDark, setIsDark] = useState(() => {
     if (typeof window === "undefined") return false;
     const stored = localStorage.getItem(THEME_KEY);
@@ -56,9 +54,24 @@ export function UserPortal({ username, onSignOut }: UserPortalProps) {
     return () => window.clearInterval(tick);
   }, [isDark]);
 
+  useEffect(() => {
+    async function loadNominations() {
+      try {
+        const result = await fetchNominations({ userId: username });
+        if (result.success) {
+          setDatabase({ applications: result.data as UserApplication[] });
+        }
+      } catch (error) {
+        console.error("Failed to load nominations:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadNominations();
+  }, [username]);
+
   const persistDatabase = useCallback((next: UserDatabase) => {
     setDatabase(next);
-    writeUserDatabase(next);
   }, []);
 
   const handleThemeToggle = useCallback(() => {
@@ -131,12 +144,12 @@ export function UserPortal({ username, onSignOut }: UserPortalProps) {
     }
   };
 
-  const handleRegisterHere = (training: (typeof TRAINING_CATALOG)[string][number]) => {
+  const handleRegisterHere = (_training: (typeof TRAINING_CATALOG)[string][number]) => {
     setActiveSection("nomination-form");
     setExpandedTrainings(null);
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, _isJA = false) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
@@ -149,7 +162,7 @@ export function UserPortal({ username, onSignOut }: UserPortalProps) {
     reader.readAsDataURL(file);
   };
 
-  const handleSubmitNomination = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmitNomination = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
     const formData = new FormData(form);
@@ -182,16 +195,22 @@ export function UserPortal({ username, onSignOut }: UserPortalProps) {
       read: false,
     };
 
-    const nextDb = {
-      ...database,
-      submitted: (database.submitted || 0) + 1,
-      applications: [...(database.applications || []), application],
-    };
-    persistDatabase(nextDb);
-    alert("Nomination submitted successfully!");
-    form.reset();
-    setUploadedSignature(null);
-    setActiveSection("trainings-main");
+    try {
+      await createNomination(application);
+      const nextDb = {
+        ...database,
+        submitted: (database.submitted || 0) + 1,
+        applications: [...(database.applications || []), application],
+      };
+      persistDatabase(nextDb);
+      alert("Nomination submitted successfully!");
+      form.reset();
+      setUploadedSignature(null);
+      setActiveSection("trainings-main");
+    } catch (error) {
+      console.error("Failed to submit nomination:", error);
+      alert("Failed to submit nomination. Please try again.");
+    }
   };
 
   const getSectionTitle = (section: ContentSection) => {
@@ -924,7 +943,7 @@ export function UserPortal({ username, onSignOut }: UserPortalProps) {
                   <div>
                     <h3 className="text-lg font-bold text-slate-800 dark:text-white border-b border-slate-200 dark:border-gray-700 pb-2 mb-4 mt-6">Signature Attachment</h3>
                     <div className="border-2 border-dashed border-slate-300 dark:border-gray-600 rounded-xl p-8 text-center cursor-pointer hover:bg-slate-50 dark:hover:bg-gray-700/50">
-                      <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, true)} className="hidden" id="ja-signature-upload" />
+                      <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e)} className="hidden" id="ja-signature-upload" />
                       <label htmlFor="ja-signature-upload" className="cursor-pointer">
                         <div className="flex flex-col items-center gap-3">
                           <div className="w-14 h-14 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">

@@ -4,6 +4,12 @@ import type {
   PortalDatabase,
   PortalNotification,
   TrainingCatalogItem,
+  SeminarConfirmationSheet,
+  ScsParticipant,
+  MemoDirective,
+  LocalTravelOrder,
+  TravelOrderRequestForm,
+  TrainingType,
 } from "@/types/portal";
 
 export const DB_KEY = "DOTr_HRDD_DB";
@@ -662,11 +668,668 @@ export function buildMemoHtml(
       <div class="signature">
         <div class="signature-box">
           ${signature ? `<img src="${signature}" alt="Authorized signatory signature" />` : ""}
-          <div style="position:absolute; bottom:0; font-weight:700; text-transform:uppercase;">Mary Grace L. Escoto</div>
+            <div style="position:absolute; bottom:0; font-weight:700; text-transform:uppercase;">Mary Grace L. Escoto</div>
         </div>
         <div style="margin-top:5px;">Chief Administrative Officer</div>
       </div>
     </div>
   </body>
 </html>`;
+}
+
+export function buildScsHtml(scs: SeminarConfirmationSheet) {
+  const participantsHtml = scs.participants
+    .map(
+      (p, i) => `
+      <tr>
+        <td style="text-align:center;">${i + 1}</td>
+        <td>${escapeHtml(p.fullName)}</td>
+        <td style="text-align:center;">${escapeHtml(p.idNumber)}</td>
+        <td style="text-align:center;">${escapeHtml(p.salaryGrade)}</td>
+        <td>${escapeHtml(p.office)}</td>
+        <td>${escapeHtml(p.position)}</td>
+        <td style="text-align:center;">${p.status === "confirmed" ? "✓" : p.status === "declined" ? "✗" : "—"}</td>
+      </tr>
+    `
+    )
+    .join("");
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Seminar Confirmation Sheet - ${escapeHtml(scs.trainingTitle)}</title>
+    <style>
+      body { margin: 0; padding: 32px 0; background: #e2e8f0; font-family: Arial, sans-serif; color: #000; }
+      .actions { position: sticky; top: 0; display: flex; justify-content: center; gap: 12px; padding: 16px; background: rgba(226, 232, 240, 0.9); backdrop-filter: blur(8px); }
+      .actions button { border: 0; border-radius: 999px; padding: 10px 16px; font: inherit; font-weight: 700; cursor: pointer; color: #fff; background: #0f172a; }
+      .page { width: 900px; margin: 0 auto; background: #fff; padding: 30px 40px; box-sizing: border-box; }
+      .header { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
+      .logos { display: flex; gap: 10px; }
+      .logos img { width: 70px; height: 70px; object-fit: contain; }
+      .title { font-size: 11pt; }
+      .title h1 { margin: 0; font-size: 14pt; text-transform: uppercase; }
+      .title h2 { margin: 5px 0 0; font-size: 12pt; font-weight: normal; }
+      .scs-title { font-size: 16pt; font-weight: bold; text-align: center; margin: 20px 0; text-transform: uppercase; }
+      .info-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+      .info-table td { border: 1px solid #000; padding: 8px 12px; }
+      .info-table td:first-child { font-weight: bold; width: 180px; background: #f5f5f5; }
+      .participants-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+      .participants-table th, .participants-table td { border: 1px solid #000; padding: 8px; text-align: left; }
+      .participants-table th { background: #ddd; text-align: center; }
+      .participants-table td { font-size: 10pt; }
+      .signature-section { margin-top: 40px; display: flex; justify-content: space-between; }
+      .signature-box { width: 45%; }
+      .signature-line { border-bottom: 1px solid #000; height: 60px; margin-top: 30px; }
+      .signature-label { font-weight: bold; text-align: center; }
+      @media print { body { background: #fff; padding: 0; } .actions { display: none; } .page { width: auto; margin: 0; } }
+    </style>
+  </head>
+  <body>
+    <div class="actions">
+      <button onclick="window.print()">Print / Save as PDF</button>
+      <button onclick="window.close()">Close</button>
+    </div>
+    <div class="page">
+      <div class="header">
+        <div class="logos">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Department_of_Transportation_%28Philippines%29.svg/330px-Department_of_Transportation_%28Philippines%29.svg.png" alt="DOTr" />
+          <img src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Bagong_Pilipinas_logo.png" alt="Bagong Pilipinas" />
+        </div>
+        <div class="title">
+          <p style="margin:0;">Republic of the Philippines</p>
+          <h1>Department of Transportation</h1>
+          <h2>Human Resource Development Division</h2>
+        </div>
+      </div>
+      <div class="scs-title">Seminar Confirmation Sheet</div>
+      ${scs.scsNumber ? `<p style="text-align:center; margin-bottom:20px;"><strong>SCS No.:</strong> ${escapeHtml(scs.scsNumber)}</p>` : ""}
+      <table class="info-table">
+        <tr>
+          <td>Training Title:</td>
+          <td><strong>${escapeHtml(scs.trainingTitle)}</strong></td>
+        </tr>
+        <tr>
+          <td>Training Date:</td>
+          <td>${escapeHtml(scs.trainingDate)}${scs.trainingTimeIn ? ` (${scs.trainingTimeIn}${scs.trainingTimeOut ? ` - ${scs.trainingTimeOut}` : ""})` : ""}</td>
+        </tr>
+        <tr>
+          <td>Provider:</td>
+          <td>${escapeHtml(scs.provider)}</td>
+        </tr>
+        <tr>
+          <td>Venue:</td>
+          <td>${escapeHtml(scs.venue)}</td>
+        </tr>
+        <tr>
+          <td>Date Prepared:</td>
+          <td>${new Date(scs.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</td>
+        </tr>
+      </table>
+      <table class="participants-table">
+        <thead>
+          <tr>
+            <th style="width:5%;">No.</th>
+            <th style="width:25%;">Full Name</th>
+            <th style="width:12%;">ID No.</th>
+            <th style="width:8%;">SG</th>
+            <th style="width:20%;">Office</th>
+            <th style="width:20%;">Position</th>
+            <th style="width:10%;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${participantsHtml}
+        </tbody>
+      </table>
+      <div class="signature-section">
+        <div class="signature-box">
+          <div class="signature-line"></div>
+          <div class="signature-label">Prepared by:</div>
+          <p style="text-align:center; margin:5px 0;">HRDD Staff</p>
+        </div>
+        <div class="signature-box">
+          <div class="signature-line"></div>
+          <div class="signature-label">Approved by:</div>
+          <p style="text-align:center; margin:5px 0;">Chief Administrative Officer</p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>`;
+}
+
+export function buildInHouseMemoHtml(memo: MemoDirective, signature?: string) {
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Memo Directive (In-House) - ${escapeHtml(memo.trainingTitle)}</title>
+    <style>
+      body { margin: 0; padding: 32px 0; background: #e2e8f0; font-family: Arial, sans-serif; color: #000; }
+      .actions { position: sticky; top: 0; display: flex; justify-content: center; gap: 12px; padding: 16px; background: rgba(226, 232, 240, 0.9); backdrop-filter: blur(8px); }
+      .actions button { border: 0; border-radius: 999px; padding: 10px 16px; font: inherit; font-weight: 700; cursor: pointer; color: #fff; background: #0f172a; }
+      .page { width: 800px; margin: 0 auto; background: #fff; padding: 30px 40px; box-sizing: border-box; }
+      .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+      .logos { display: flex; gap: 10px; }
+      .logos img { width: 70px; height: 70px; object-fit: contain; }
+      .dept-title { font-size: 12pt; }
+      .memo-title { font-size: 18pt; font-weight: bold; text-align: center; margin: 30px 0; text-transform: uppercase; }
+      .memo-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+      .memo-table td { padding: 8px 0; vertical-align: top; }
+      .memo-table td:first-child { width: 80px; font-weight: bold; }
+      .memo-table td:nth-child(2) { width: 20px; }
+      hr { border: 0; border-top: 2px solid #000; margin: 20px 0; }
+      .content { text-align: justify; line-height: 1.6; margin-bottom: 20px; }
+      .content-numbered { display: flex; gap: 15px; margin-bottom: 15px; }
+      .content-number { font-weight: bold; width: 30px; }
+      .signature-section { margin-top: 50px; }
+      .signature-box { width: 300px; }
+      .signature-img { max-height: 80px; max-width: 200px; }
+      .signature-name { font-weight: bold; text-transform: uppercase; margin-top: 40px; }
+      .signature-position { font-size: 10pt; }
+      @media print { body { background: #fff; padding: 0; } .actions { display: none; } .page { width: auto; margin: 0; } }
+    </style>
+  </head>
+  <body>
+    <div class="actions">
+      <button onclick="window.print()">Print / Save as PDF</button>
+      <button onclick="window.close()">Close</button>
+    </div>
+    <div class="page">
+      <div class="header">
+        <div class="logos">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Department_of_Transportation_%28Philippines%29.svg/330px-Department_of_Transportation_%28Philippines%29.svg.png" alt="DOTr" />
+          <img src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Bagong_Pilipinas_logo.png" alt="Bagong Pilipinas" />
+        </div>
+        <div class="dept-title">
+          <p style="margin:0;">Republic of the Philippines</p>
+          <p style="margin:0; font-weight:bold; font-size:14pt; text-transform:uppercase;">Department of Transportation</p>
+          <p style="margin:5px 0 0; font-size:11pt;">Human Resource Development Division</p>
+        </div>
+      </div>
+      <div class="memo-title">Memorandum</div>
+      <table class="memo-table">
+        <tr>
+          <td>TO:</td>
+          <td>:</td>
+          <td><strong>All Concerned Personnel</strong></td>
+        </tr>
+        <tr>
+          <td>FROM:</td>
+          <td>:</td>
+          <td><strong>The Chief Administrative Officer</strong><br />For Human Resource Development Division</td>
+        </tr>
+        <tr>
+          <td>SUBJECT:</td>
+          <td>:</td>
+          <td><strong>${escapeHtml(memo.trainingTitle)}</strong></td>
+        </tr>
+        <tr>
+          <td>DATE:</td>
+          <td>:</td>
+          <td><strong>${formatMemoDate(memo.memoDate)}</strong></td>
+        </tr>
+      </table>
+      <hr />
+      <div class="content">
+        <div class="content-numbered"><div class="content-number">1.0</div><div>This refers to the conduct of <strong>${escapeHtml(memo.trainingTitle)}</strong> scheduled on <strong>${formatMemoDate(memo.trainingDate)}</strong>${memo.trainingTimeIn ? ` from <strong>${memo.trainingTimeIn}</strong>` : ""}${memo.trainingTimeOut ? ` to <strong>${memo.trainingTimeOut}</strong>` : ""} at <strong>${escapeHtml(memo.venue)}</strong>.</div></div>
+      </div>
+      <div class="content">
+        <div class="content-numbered"><div class="content-number">2.0</div><div><strong>OBJECTIVES:</strong><br />${escapeHtml(memo.objectives)}</div></div>
+      </div>
+      ${memo.requirements.length > 0 ? `
+      <div class="content">
+        <div class="content-numbered"><div class="content-number">3.0</div><div><strong>TRAINING REQUIREMENTS:</strong><br />
+          <ul>${memo.requirements.map(r => `<li>${escapeHtml(r)}</li>`).join("")}</ul>
+        </div></div>
+      </div>` : ""}
+      <div class="content">
+        <div class="content-numbered"><div class="content-number">4.0</div><div>In view of this, the participants are hereby directed to attend the training program. For the L&D program to be fully credited, participants are required to submit all post-training requirements to HRDD within the prescribed period.</div></div>
+      </div>
+      <div class="content">
+        <div class="content-numbered"><div class="content-number">5.0</div><div>For information, guidance, and strict compliance.</div></div>
+      </div>
+      <div class="signature-section">
+        <div class="signature-box">
+          ${signature ? `<img class="signature-img" src="${signature}" alt="Signature" />` : ""}
+          <div class="signature-name">${memo.signedBy || "Chief Administrative Officer"}</div>
+          <div class="signature-position">${memo.signedDate ? `Date: ${formatMemoDate(memo.signedDate)}` : ""}</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>`;
+}
+
+export function buildOutOfHouseMemoHtml(memo: MemoDirective, signature?: string) {
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Memo Directive (Out-of-House) - ${escapeHtml(memo.trainingTitle)}</title>
+    <style>
+      body { margin: 0; padding: 32px 0; background: #e2e8f0; font-family: Arial, sans-serif; color: #000; }
+      .actions { position: sticky; top: 0; display: flex; justify-content: center; gap: 12px; padding: 16px; background: rgba(226, 232, 240, 0.9); backdrop-filter: blur(8px); }
+      .actions button { border: 0; border-radius: 999px; padding: 10px 16px; font: inherit; font-weight: 700; cursor: pointer; color: #fff; background: #0f172a; }
+      .page { width: 800px; margin: 0 auto; background: #fff; padding: 30px 40px; box-sizing: border-box; }
+      .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+      .logos { display: flex; gap: 10px; }
+      .logos img { width: 70px; height: 70px; object-fit: contain; }
+      .dept-title { font-size: 12pt; }
+      .memo-title { font-size: 18pt; font-weight: bold; text-align: center; margin: 30px 0; text-transform: uppercase; }
+      .memo-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+      .memo-table td { padding: 8px 0; vertical-align: top; }
+      .memo-table td:first-child { width: 80px; font-weight: bold; }
+      .memo-table td:nth-child(2) { width: 20px; }
+      .participant-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+      .participant-table th, .participant-table td { border: 1px solid #000; padding: 8px; text-align: left; }
+      .participant-table th { background: #eee; text-align: center; }
+      hr { border: 0; border-top: 2px solid #000; margin: 20px 0; }
+      .content { text-align: justify; line-height: 1.6; margin-bottom: 20px; }
+      .content-numbered { display: flex; gap: 15px; margin-bottom: 15px; }
+      .content-number { font-weight: bold; width: 30px; }
+      .signature-section { margin-top: 50px; }
+      .signature-box { width: 300px; }
+      .signature-img { max-height: 80px; max-width: 200px; }
+      .signature-name { font-weight: bold; text-transform: uppercase; margin-top: 40px; }
+      .signature-position { font-size: 10pt; }
+      @media print { body { background: #fff; padding: 0; } .actions { display: none; } .page { width: auto; margin: 0; } }
+    </style>
+  </head>
+  <body>
+    <div class="actions">
+      <button onclick="window.print()">Print / Save as PDF</button>
+      <button onclick="window.close()">Close</button>
+    </div>
+    <div class="page">
+      <div class="header">
+        <div class="logos">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Department_of_Transportation_%28Philippines%29.svg/330px-Department_of_Transportation_%28Philippines%29.svg.png" alt="DOTr" />
+          <img src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Bagong_Pilipinas_logo.png" alt="Bagong Pilipinas" />
+        </div>
+        <div class="dept-title">
+          <p style="margin:0;">Republic of the Philippines</p>
+          <p style="margin:0; font-weight:bold; font-size:14pt; text-transform:uppercase;">Department of Transportation</p>
+          <p style="margin:5px 0 0; font-size:11pt;">Human Resource Development Division</p>
+        </div>
+      </div>
+      <div class="memo-title">Memorandum</div>
+      <table class="memo-table">
+        <tr>
+          <td>TO:</td>
+          <td>:</td>
+          <td><strong>All Concerned Personnel</strong></td>
+        </tr>
+        <tr>
+          <td>FROM:</td>
+          <td>:</td>
+          <td><strong>The Chief Administrative Officer</strong><br />For Human Resource Development Division</td>
+        </tr>
+        <tr>
+          <td>SUBJECT:</td>
+          <td>:</td>
+          <td><strong>${escapeHtml(memo.trainingTitle)}</strong></td>
+        </tr>
+        <tr>
+          <td>DATE:</td>
+          <td>:</td>
+          <td><strong>${formatMemoDate(memo.memoDate)}</strong></td>
+        </tr>
+      </table>
+      <hr />
+      <div class="content">
+        <div class="content-numbered"><div class="content-number">1.0</div><div>This refers to the approved nominations of the listed personnel to attend <strong>${escapeHtml(memo.trainingTitle)}</strong> scheduled on <strong>${formatMemoDate(memo.trainingDate)}</strong>${memo.trainingTimeIn ? ` from <strong>${memo.trainingTimeIn}</strong>` : ""}${memo.trainingTimeOut ? ` to <strong>${memo.trainingTimeOut}</strong>` : ""} to be conducted by <strong>${escapeHtml(memo.provider)}</strong> at <strong>${escapeHtml(memo.venue)}</strong>.</div></div>
+      </div>
+      <table class="participant-table">
+        <thead>
+          <tr>
+            <th style="width:5%;">No.</th>
+            <th style="width:25%;">Name</th>
+            <th style="width:20%;">Position</th>
+            <th style="width:25%;">Office</th>
+            <th style="width:25%;">Immediate Supervisor</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="text-align:center;">1</td>
+            <td><strong>${escapeHtml(memo.participantName)}</strong></td>
+            <td>${escapeHtml(memo.participantPosition)}</td>
+            <td>${escapeHtml(memo.participantOffice)}</td>
+            <td>—</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="content">
+        <div class="content-numbered"><div class="content-number">2.0</div><div><strong>OBJECTIVES:</strong><br />${escapeHtml(memo.objectives)}</div></div>
+      </div>
+      ${memo.requirements.length > 0 ? `
+      <div class="content">
+        <div class="content-numbered"><div class="content-number">3.0</div><div><strong>TRAINING REQUIREMENTS:</strong><br />
+          <ul>${memo.requirements.map(r => `<li>${escapeHtml(r)}</li>`).join("")}</ul>
+        </div></div>
+      </div>` : ""}
+      <div class="content">
+        <div class="content-numbered"><div class="content-number">4.0</div><div>In view of this, the participants are hereby directed to attend the training program. For the L&D program to be fully credited, participants are required to submit all post-training requirements to HRDD within the prescribed period.</div></div>
+      </div>
+      <div class="content">
+        <div class="content-numbered"><div class="content-number">5.0</div><div>All submissions shall be in electronic form, preferably via email, and with the use of digital signatures, if available.</div></div>
+      </div>
+      <div class="content">
+        <div class="content-numbered"><div class="content-number">6.0</div><div>In case of non-attendance, participants are directed to submit a justification to the HRDD no later than seven (7) working days after the supposed L&D activity.</div></div>
+      </div>
+      <div class="content">
+        <div class="content-numbered"><div class="content-number">7.0</div><div>For information, guidance, and strict compliance.</div></div>
+      </div>
+      <div class="signature-section">
+        <div class="signature-box">
+          ${signature ? `<img class="signature-img" src="${signature}" alt="Signature" />` : ""}
+          <div class="signature-name">${memo.signedBy || "Chief Administrative Officer"}</div>
+          <div class="signature-position">${memo.signedDate ? `Date: ${formatMemoDate(memo.signedDate)}` : ""}</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>`;
+}
+
+export function buildTorfHtml(torf: TravelOrderRequestForm) {
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Travel Order Request Form - ${escapeHtml(torf.participantName)}</title>
+    <style>
+      body { margin: 0; padding: 32px 0; background: #e2e8f0; font-family: Arial, sans-serif; color: #000; }
+      .actions { position: sticky; top: 0; display: flex; justify-content: center; gap: 12px; padding: 16px; background: rgba(226, 232, 240, 0.9); backdrop-filter: blur(8px); }
+      .actions button { border: 0; border-radius: 999px; padding: 10px 16px; font: inherit; font-weight: 700; cursor: pointer; color: #fff; background: #0f172a; }
+      .page { width: 800px; margin: 0 auto; background: #fff; padding: 30px 40px; box-sizing: border-box; }
+      .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+      .logos { display: flex; gap: 10px; }
+      .logos img { width: 70px; height: 70px; object-fit: contain; }
+      .dept-title { font-size: 12pt; }
+      .torf-title { font-size: 16pt; font-weight: bold; text-align: center; margin: 20px 0; text-transform: uppercase; }
+      .form-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+      .form-table td { border: 1px solid #000; padding: 8px 12px; vertical-align: top; }
+      .form-table td:first-child { font-weight: bold; width: 180px; background: #f5f5f5; }
+      .checkbox-group { display: flex; gap: 20px; }
+      .checkbox-item { display: flex; align-items: center; gap: 5px; }
+      .signature-section { margin-top: 40px; display: flex; justify-content: space-between; }
+      .signature-box { width: 45%; }
+      .signature-line { border-bottom: 1px solid #000; height: 60px; margin-top: 30px; }
+      .signature-label { font-weight: bold; text-align: center; }
+      @media print { body { background: #fff; padding: 0; } .actions { display: none; } .page { width: auto; margin: 0; } }
+    </style>
+  </head>
+  <body>
+    <div class="actions">
+      <button onclick="window.print()">Print / Save as PDF</button>
+      <button onclick="window.close()">Close</button>
+    </div>
+    <div class="page">
+      <div class="header">
+        <div class="logos">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Department_of_Transportation_%28Philippines%29.svg/330px-Department_of_Transportation_%28Philippines%29.svg.png" alt="DOTr" />
+          <img src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Bagong_Pilipinas_logo.png" alt="Bagong Pilipinas" />
+        </div>
+        <div class="dept-title">
+          <p style="margin:0;">Republic of the Philippines</p>
+          <p style="margin:0; font-weight:bold; font-size:14pt; text-transform:uppercase;">Department of Transportation</p>
+          <p style="margin:5px 0 0; font-size:11pt;">Human Resource Development Division</p>
+        </div>
+      </div>
+      <div class="torf-title">Travel Order Request Form (TORF)</div>
+      <table class="form-table">
+        <tr>
+          <td>Name of Requestor:</td>
+          <td><strong>${escapeHtml(torf.participantName)}</strong></td>
+        </tr>
+        <tr>
+          <td>Position Title:</td>
+          <td>${escapeHtml(torf.participantPosition)}</td>
+        </tr>
+        <tr>
+          <td>Office/Unit:</td>
+          <td>${escapeHtml(torf.participantOffice)}</td>
+        </tr>
+        <tr>
+          <td>Employee ID No.:</td>
+          <td>${escapeHtml(torf.employeeId)}</td>
+        </tr>
+        <tr>
+          <td>Salary Grade:</td>
+          <td>${escapeHtml(torf.salaryGrade)}</td>
+        </tr>
+        <tr>
+          <td>Purpose of Travel:</td>
+          <td>${escapeHtml(torf.purposeOfTravel)}</td>
+        </tr>
+        <tr>
+          <td>Destination:</td>
+          <td>${escapeHtml(torf.destination)}</td>
+        </tr>
+        <tr>
+          <td>Departure Date:</td>
+          <td>${escapeHtml(torf.departureDate)}</td>
+        </tr>
+        <tr>
+          <td>Return Date:</td>
+          <td>${escapeHtml(torf.returnDate)}</td>
+        </tr>
+        <tr>
+          <td>Estimated Expenses:</td>
+          <td>${escapeHtml(torf.estimatedExpenses)}</td>
+        </tr>
+        <tr>
+          <td>Mode of Transportation:</td>
+          <td>${escapeHtml(torf.transportationMode)}</td>
+        </tr>
+        <tr>
+          <td>Accommodation Needed:</td>
+          <td>
+            <div class="checkbox-group">
+              <div class="checkbox-item">
+                <span>[${torf.accommodationNeeded ? "X" : " "}]</span>
+                <span>Yes</span>
+              </div>
+              <div class="checkbox-item">
+                <span>[${!torf.accommodationNeeded ? "X" : " "}]</span>
+                <span>No</span>
+              </div>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>Date of Request:</td>
+          <td>${new Date(torf.submitDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</td>
+        </tr>
+      </table>
+      <div class="signature-section">
+        <div class="signature-box">
+          <div class="signature-line"></div>
+          <div class="signature-label">Signature of Requestor</div>
+        </div>
+        <div class="signature-box">
+          <div class="signature-line"></div>
+          <div class="signature-label">Approved by: ${torf.approvedBy || "Chief Administrative Officer"}</div>
+          ${torf.approvalDate ? `<p style="text-align:center; margin:5px 0; font-size:10pt;">Date: ${formatMemoDate(torf.approvalDate)}</p>` : ""}
+        </div>
+      </div>
+    </div>
+  </body>
+</html>`;
+}
+
+export function buildLtoHtml(lto: LocalTravelOrder, memo: MemoDirective, torf?: TravelOrderRequestForm) {
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Local Travel Order - ${escapeHtml(lto.participantName)}</title>
+    <style>
+      body { margin: 0; padding: 32px 0; background: #e2e8f0; font-family: Arial, sans-serif; color: #000; }
+      .actions { position: sticky; top: 0; display: flex; justify-content: center; gap: 12px; padding: 16px; background: rgba(226, 232, 240, 0.9); backdrop-filter: blur(8px); }
+      .actions button { border: 0; border-radius: 999px; padding: 10px 16px; font: inherit; font-weight: 700; cursor: pointer; color: #fff; background: #0f172a; }
+      .page { width: 800px; margin: 0 auto; background: #fff; padding: 30px 40px; box-sizing: border-box; }
+      .header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+      .logos { display: flex; gap: 10px; }
+      .logos img { width: 70px; height: 70px; object-fit: contain; }
+      .dept-title { font-size: 12pt; }
+      .lto-title { font-size: 16pt; font-weight: bold; text-align: center; margin: 20px 0; text-transform: uppercase; }
+      .lto-number { text-align: center; font-size: 11pt; margin-bottom: 20px; }
+      .info-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+      .info-table td { border: 1px solid #000; padding: 8px 12px; vertical-align: top; }
+      .info-table td:first-child { font-weight: bold; width: 180px; background: #f5f5f5; }
+      .participant-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+      .participant-table th, .participant-table td { border: 1px solid #000; padding: 10px; text-align: left; }
+      .participant-table th { background: #eee; text-align: center; }
+      .signature-section { margin-top: 40px; display: flex; justify-content: space-between; }
+      .signature-box { width: 45%; }
+      .signature-line { border-bottom: 1px solid #000; height: 60px; margin-top: 30px; }
+      .signature-label { font-weight: bold; text-align: center; }
+      @media print { body { background: #fff; padding: 0; } .actions { display: none; } .page { width: auto; margin: 0; } }
+    </style>
+  </head>
+  <body>
+    <div class="actions">
+      <button onclick="window.print()">Print / Save as PDF</button>
+      <button onclick="window.close()">Close</button>
+    </div>
+    <div class="page">
+      <div class="header">
+        <div class="logos">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/Department_of_Transportation_%28Philippines%29.svg/330px-Department_of_Transportation_%28Philippines%29.svg.png" alt="DOTr" />
+          <img src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Bagong_Pilipinas_logo.png" alt="Bagong Pilipinas" />
+        </div>
+        <div class="dept-title">
+          <p style="margin:0;">Republic of the Philippines</p>
+          <p style="margin:0; font-weight:bold; font-size:14pt; text-transform:uppercase;">Department of Transportation</p>
+          <p style="margin:5px 0 0; font-size:11pt;">Human Resource Development Division</p>
+        </div>
+      </div>
+      <div class="lto-title">Local Travel Order</div>
+      ${lto.ltoNumber ? `<div class="lto-number"><strong>LTO No.:</strong> ${escapeHtml(lto.ltoNumber)}</div>` : ""}
+      <table class="info-table">
+        <tr>
+          <td>Training Title:</td>
+          <td><strong>${escapeHtml(memo.trainingTitle)}</strong></td>
+        </tr>
+        <tr>
+          <td>Training Date:</td>
+          <td>${formatMemoDate(memo.trainingDate)}${memo.trainingTimeIn ? ` (${memo.trainingTimeIn}${memo.trainingTimeOut ? ` - ${memo.trainingTimeOut}` : ""})` : ""}</td>
+        </tr>
+        <tr>
+          <td>Venue:</td>
+          <td>${escapeHtml(memo.venue)}</td>
+        </tr>
+        <tr>
+          <td>Provider:</td>
+          <td>${escapeHtml(memo.provider)}</td>
+        </tr>
+        ${torf ? `
+        <tr>
+          <td>Destination:</td>
+          <td>${escapeHtml(torf.destination)}</td>
+        </tr>
+        <tr>
+          <td>Departure Date:</td>
+          <td>${escapeHtml(torf.departureDate)}</td>
+        </tr>
+        <tr>
+          <td>Return Date:</td>
+          <td>${escapeHtml(torf.returnDate)}</td>
+        </tr>
+        <tr>
+          <td>Transportation:</td>
+          <td>${escapeHtml(torf.transportationMode)}</td>
+        </tr>` : ""}
+      </table>
+      <table class="participant-table">
+        <thead>
+          <tr>
+            <th>No.</th>
+            <th>Name</th>
+            <th>Position</th>
+            <th>Office</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="text-align:center;">1</td>
+            <td><strong>${escapeHtml(lto.participantName)}</strong></td>
+            <td>${escapeHtml(lto.participantPosition)}</td>
+            <td>${escapeHtml(lto.participantOffice)}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="margin-top:20px; text-align:justify;"><strong>Authority:</strong> This Local Travel Order is hereby issued to authorize the above-named personnel to attend the training program indicated herein, in accordance with existing rules and regulations on official travel.</p>
+      <p style="text-align:justify;"><strong>Instructions:</strong> The authorized personnel shall submit a Post-Training Report to the HRDD within seven (7) working days after the completion of the training program.</p>
+      <div class="signature-section">
+        <div class="signature-box">
+          <div class="signature-line"></div>
+          <div class="signature-label">Chief Administrative Officer</div>
+        </div>
+        <div class="signature-box">
+          <div class="signature-line"></div>
+          <div class="signature-label">Date Issued</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>`;
+}
+
+export function generateScsNumber(): string {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const random = String(Math.floor(Math.random() * 1000)).padStart(3, "0");
+  return `SCS-${year}${month}-${random}`;
+}
+
+export function generateMemoNumber(): string {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const random = String(Math.floor(Math.random() * 1000)).padStart(3, "0");
+  return `MEMO-${year}${month}-${random}`;
+}
+
+export function generateLtoNumber(): string {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const random = String(Math.floor(Math.random() * 1000)).padStart(3, "0");
+  return `LTO-${year}${month}-${random}`;
+}
+
+export function getTrainingTypeLabel(type?: TrainingType): string {
+  switch (type) {
+    case "out-of-house":
+      return "Out-of-House";
+    case "in-house":
+      return "In-House";
+    default:
+      return "Training";
+  }
+}
+
+export function isOutOfHouseTraining(mode?: string, type?: TrainingType): boolean {
+  if (type === "out-of-house") return true;
+  if (type === "in-house") return false;
+  if (!mode) return false;
+  const lower = mode.toLowerCase();
+  return (
+    lower.includes("out") ||
+    lower.includes("external") ||
+    lower.includes("conference") ||
+    lower.includes("seminar") ||
+    lower.includes("workshop")
+  );
 }
