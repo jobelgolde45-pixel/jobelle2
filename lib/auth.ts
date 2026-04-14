@@ -68,16 +68,18 @@ export function clearAuthSession(): void {
   localStorage.removeItem(AUTH_STORAGE_KEY);
 }
 
-export const ROLE_LABELS: Record<UserRole, string> = {
+export const ROLE_LABELS: Record<string, string> = {
   employee: "Employee",
   supervisor: "Supervisor",
   hrdd_admin: "HRDD Admin",
   signatory: "Authorized Signatory",
+  admin: "System Administrator",
 };
 
-export const ROLE_PORTALS: Record<UserRole, string> = {
+export const ROLE_PORTALS: Record<string, string> = {
   employee: "Employee Portal",
   supervisor: "Supervisor Console",
   hrdd_admin: "HRDD Admin Console",
   signatory: "Signatory Portal",
+  admin: "Admin Portal",
 };

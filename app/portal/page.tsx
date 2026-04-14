@@ -16,6 +16,7 @@ export default function PortalPage() {
         supervisor: "/portal/supervisor",
         hrdd_admin: "/portal/hrdd-admin",
         signatory: "/portal/signatory",
+        admin: "/portal/admin",
       };
       const route = routes[user.role];
       if (route) {

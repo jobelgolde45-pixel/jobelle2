@@ -126,18 +126,14 @@ export async function POST_Logout() {
 }
 
 function mapRole(dbRole: string): string {
-  switch (dbRole) {
-    case "employee":
-      return "employee";
-    case "supervisor":
-      return "supervisor";
-    case "hrdd_admin":
-      return "hrdd_admin";
-    case "signatory":
-      return "signatory";
-    default:
-      return "employee";
-  }
+  const map: Record<string, string> = {
+    employee: "employee",
+    supervisor: "supervisor",
+    hrdd_admin: "hrdd_admin",
+    signatory: "signatory",
+    admin: "admin",
+  };
+  return map[dbRole] ?? "employee";
 }
 
 function getInitials(name: string): string {

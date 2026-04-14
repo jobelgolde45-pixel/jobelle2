@@ -146,3 +146,72 @@ export async function createUser(user: any) {
 export async function fetchOffices() {
   return apiFetch<{ success: boolean; data: any[] }>("/api/offices");
 }
+
+// Certificates API
+export async function fetchCertificates(userId?: string) {
+  const params = userId ? `?userId=${userId}` : "";
+  return apiFetch<{ success: boolean; data: any[] }>(`/api/certificates${params}`);
+}
+
+export async function createCertificate(cert: any) {
+  return apiFetch<{ success: boolean; certNumber: string; id: number }>("/api/certificates", {
+    method: "POST",
+    body: JSON.stringify(cert),
+  });
+}
+
+// IDP API
+export async function fetchIdp(userId?: string) {
+  const params = userId ? `?userId=${userId}` : "";
+  return apiFetch<{ success: boolean; data: any[] }>(`/api/idp${params}`);
+}
+
+export async function createIdp(idp: any) {
+  return apiFetch<{ success: boolean; id: number }>("/api/idp", {
+    method: "POST",
+    body: JSON.stringify(idp),
+  });
+}
+
+export async function updateIdp(update: any) {
+  return apiFetch<{ success: boolean }>("/api/idp", {
+    method: "PATCH",
+    body: JSON.stringify(update),
+  });
+}
+
+// Assessments API
+export async function fetchAssessments(type: string, category?: string) {
+  const params = new URLSearchParams({ type });
+  if (category) params.set("category", category);
+  return apiFetch<{ success: boolean; data: any }>(`/api/assessments?${params}`);
+}
+
+export async function submitQuizResult(result: any) {
+  return apiFetch<{ success: boolean; passed: boolean; id: number }>("/api/assessments", {
+    method: "POST",
+    body: JSON.stringify({ type: "quiz_result", ...result }),
+  });
+}
+
+export async function saveAssessmentProgress(progress: any) {
+  return apiFetch<{ success: boolean }>("/api/assessments", {
+    method: "POST",
+    body: JSON.stringify({ type: "progress", ...progress }),
+  });
+}
+
+// Audit Logs API
+export async function fetchAuditLogs(entityType?: string, limit?: number) {
+  const params = new URLSearchParams();
+  if (entityType) params.set("entityType", entityType);
+  if (limit) params.set("limit", String(limit));
+  return apiFetch<{ success: boolean; data: any[] }>(`/api/audit-logs?${params}`);
+}
+
+export async function createAuditLog(log: any) {
+  return apiFetch<{ success: boolean }>("/api/audit-logs", {
+    method: "POST",
+    body: JSON.stringify(log),
+  });
+}

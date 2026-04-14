@@ -19,9 +19,21 @@ import {
   MapPin,
   Target,
   AlertCircle,
+  Award,
+  Brain,
+  GraduationCap,
+  TrendingUp,
+  CheckCircle,
+  XCircle,
+  RotateCcw,
+  Download,
+  Star,
+  ChevronLeft,
+  Lightbulb,
 } from "lucide-react";
-import { fetchTrainings, fetchNominations, createNomination, createMisRequest } from "@/lib/api-client";
+import { fetchTrainings, fetchNominations, createNomination, createMisRequest, fetchCertificates, fetchIdp, createIdp, fetchAssessments, submitQuizResult } from "@/lib/api-client";
 import type { TrainingProgram, NominationForm, TrainingType, QualificationCriteria } from "@/types/portal";
+import { motion, AnimatePresence } from "framer-motion";
 
 const OFFICES = [
   { value: "hrdd", label: "Human Resource Development Division" },
@@ -50,7 +62,23 @@ const MIS_PRIORITIES = [
   { value: "high", label: "High" },
 ];
 
-type Section = "dashboard" | "trainings" | "nomination" | "competency" | "mis-assistance" | "post-training";
+const DEMO_FLASHCARDS = [
+  { id: 1, question: "What does CSC stand for?", answer: "Civil Service Commission — the central personnel agency of the Philippine government.", hint: "Think of the government body managing civil servants." },
+  { id: 2, question: "What is PRIME-HRM?", answer: "Program to Institutionalize Meritocracy and Excellence in Human Resource Management — a CSC framework for assessing HRM maturity.", hint: "It's a CSC framework for HR excellence." },
+  { id: 3, question: "What is RA 11032?", answer: "Ease of Doing Business and Efficient Government Service Delivery Act of 2018 — mandates the Citizen's Charter.", hint: "Related to the Citizen's Charter." },
+  { id: 4, question: "What is an IDP?", answer: "Individual Development Plan — a document outlining an employee's competency gaps and planned learning activities.", hint: "It's a personal learning roadmap." },
+  { id: 5, question: "What is the Citizen's Charter?", answer: "An official document that communicates, in simple terms, information on the services provided by a government agency.", hint: "It's a transparency document for government services." },
+];
+
+const DEMO_QUIZ = [
+  { id: 1, question: "Which law mandates the Citizen's Charter for government agencies?", options_json: JSON.stringify(["RA 9485", "RA 11032", "RA 6713", "RA 7160"]), correct_answer: 1, explanation: "RA 11032 (Ease of Doing Business Act) mandates the Citizen's Charter." },
+  { id: 2, question: "PRIME-HRM stands for:", options_json: JSON.stringify(["Program to Institutionalize Meritocracy and Excellence in HRM", "Philippine Reform Initiative for Merit-based HRM", "Public Resource Integration for Merit Excellence in HRM", "None of the above"]), correct_answer: 0, explanation: "PRIME-HRM stands for Program to Institutionalize Meritocracy and Excellence in Human Resource Management." },
+  { id: 3, question: "The CSC is headed by a:", options_json: JSON.stringify(["Secretary", "Chairperson", "Director General", "Commissioner"]), correct_answer: 1, explanation: "The Civil Service Commission is headed by a Chairperson." },
+  { id: 4, question: "An IDP is primarily used for:", options_json: JSON.stringify(["Payroll processing", "Competency gap analysis and learning planning", "Leave management", "Performance rating"]), correct_answer: 1, explanation: "An IDP identifies competency gaps and plans development activities." },
+  { id: 5, question: "Under RA 6713, government employees must file a SALN:", options_json: JSON.stringify(["Every 5 years", "Only upon appointment", "Annually", "Upon retirement only"]), correct_answer: 2, explanation: "SALN must be filed annually under RA 6713 (Code of Conduct and Ethical Standards)." },
+];
+
+type Section = "dashboard" | "trainings" | "nomination" | "competency" | "mis-assistance" | "post-training" | "idp" | "certificates" | "csc-exam" | "assessments";
 
 interface MisRequest {
   id: string;
@@ -69,7 +97,7 @@ interface PostTrainingItem {
 }
 
 export default function EmployeePortalPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoggingOut } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const { formatClock, formatDate } = useClock();
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
@@ -86,19 +114,34 @@ export default function EmployeePortalPage() {
   const [trainingFilter, setTrainingFilter] = useState<TrainingType | "all">("all");
   const [isLoading, setIsLoading] = useState(true);
 
+  // New section states
+  const [certificates, setCertificates] = useState<any[]>([]);
+  const [idpList, setIdpList] = useState<any[]>([]);
+  const [showIdpModal, setShowIdpModal] = useState(false);
+  const [idpForm, setIdpForm] = useState({ currentCompetencies: "", targetCompetencies: "", developmentActivities: "", targetDate: "", remarks: "" });
+  const [flashcards, setFlashcards] = useState<any[]>([]);
+  const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
+  const [flashcardIndex, setFlashcardIndex] = useState(0);
+  const [flashcardFlipped, setFlashcardFlipped] = useState(false);
+  const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
+  const [quizSubmitted, setQuizSubmitted] = useState(false);
+  const [quizScore, setQuizScore] = useState(0);
+  const [examCategory, setExamCategory] = useState("Civil Service");
+  const [assessmentMode, setAssessmentMode] = useState<"menu" | "flashcard" | "quiz">("menu");
+
   useEffect(() => {
     async function loadData() {
       try {
-        const [trainingsResult, nominationsResult] = await Promise.all([
+        const [trainingsResult, nominationsResult, certsResult, idpResult] = await Promise.all([
           fetchTrainings(),
           user?.id ? fetchNominations({ userId: user.id }) : Promise.resolve({ success: true, data: [] }),
+          user?.id ? fetchCertificates(user.id) : Promise.resolve({ success: true, data: [] }),
+          user?.id ? fetchIdp(user.id) : Promise.resolve({ success: true, data: [] }),
         ]);
-        if (trainingsResult.success) {
-          setTrainings(trainingsResult.data);
-        }
-        if (nominationsResult.success) {
-          setNominations(nominationsResult.data as NominationForm[]);
-        }
+        if (trainingsResult.success) setTrainings(trainingsResult.data);
+        if (nominationsResult.success) setNominations(nominationsResult.data as NominationForm[]);
+        if (certsResult.success) setCertificates(certsResult.data);
+        if (idpResult.success) setIdpList(idpResult.data);
       } catch (error) {
         console.error("Failed to load data:", error);
       } finally {
@@ -200,6 +243,66 @@ export default function EmployeePortalPage() {
     }
   };
 
+  const handleSubmitIdp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const result = await createIdp({ userId: user?.id, ...idpForm });
+      if (result.success) {
+        const updated = await fetchIdp(user?.id);
+        if (updated.success) setIdpList(updated.data);
+        setShowIdpModal(false);
+        setIdpForm({ currentCompetencies: "", targetCompetencies: "", developmentActivities: "", targetDate: "", remarks: "" });
+      }
+    } catch (e) {
+      alert("Failed to submit IDP.");
+    }
+  };
+
+  const handleLoadAssessments = async (mode: "flashcard" | "quiz") => {
+    try {
+      const result = await fetchAssessments(mode, examCategory);
+      if (result.success) {
+        if (mode === "flashcard") {
+          setFlashcards(Array.isArray(result.data) ? result.data : []);
+          setFlashcardIndex(0);
+          setFlashcardFlipped(false);
+        } else {
+          setQuizQuestions(Array.isArray(result.data) ? result.data : []);
+          setQuizAnswers({});
+          setQuizSubmitted(false);
+          setQuizScore(0);
+        }
+      }
+      setAssessmentMode(mode);
+    } catch (e) {
+      // Use demo data if DB is empty
+      if (mode === "flashcard") {
+        setFlashcards(DEMO_FLASHCARDS);
+        setFlashcardIndex(0);
+        setFlashcardFlipped(false);
+      } else {
+        setQuizQuestions(DEMO_QUIZ);
+        setQuizAnswers({});
+        setQuizSubmitted(false);
+        setQuizScore(0);
+      }
+      setAssessmentMode(mode);
+    }
+  };
+
+  const handleSubmitQuiz = async () => {
+    const score = quizQuestions.reduce((acc, q, i) => acc + (quizAnswers[i] === q.correct_answer ? 1 : 0), 0);
+    setQuizScore(score);
+    setQuizSubmitted(true);
+    try {
+      await submitQuizResult({ userId: user?.id, category: examCategory, score, totalQuestions: quizQuestions.length, answers: Object.values(quizAnswers) });
+      if (score >= quizQuestions.length * 0.75) {
+        const updated = await fetchCertificates(user?.id);
+        if (updated.success) setCertificates(updated.data);
+      }
+    } catch (e) { /* silent */ }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending_supervisor":
@@ -276,14 +379,36 @@ export default function EmployeePortalPage() {
               <HelpCircle className="h-5 w-5" />
               <span>MIS Assistance</span>
             </button>
+            <button
+              onClick={() => setActiveSection("idp")}
+              className={`menu-item ${activeSection === "idp" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600" : "text-gray-600 dark:text-gray-400"}`}
+            >
+              <TrendingUp className="h-5 w-5" />
+              <span>My IDP</span>
+            </button>
+            <button
+              onClick={() => setActiveSection("certificates")}
+              className={`menu-item ${activeSection === "certificates" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600" : "text-gray-600 dark:text-gray-400"}`}
+            >
+              <Award className="h-5 w-5" />
+              <span>Certificates</span>
+            </button>
+            <button
+              onClick={() => { setActiveSection("csc-exam"); setAssessmentMode("menu"); }}
+              className={`menu-item ${activeSection === "csc-exam" || activeSection === "assessments" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600" : "text-gray-600 dark:text-gray-400"}`}
+            >
+              <GraduationCap className="h-5 w-5" />
+              <span>CSC Exam Prep</span>
+            </button>
           </nav>
 
           <div className="absolute bottom-8 left-5 right-5">
             <button
               onClick={logout}
-              className="w-full rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50"
+              disabled={isLoggingOut}
+              className="w-full rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-100 disabled:opacity-60 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50"
             >
-              Sign Out
+              {isLoggingOut ? "Signing out…" : "Sign Out"}
             </button>
           </div>
         </aside>
@@ -298,6 +423,10 @@ export default function EmployeePortalPage() {
                 {activeSection === "competency" && "Competency Framework"}
                 {activeSection === "mis-assistance" && "MIS Assistance"}
                 {activeSection === "post-training" && "Post-Training Requirements"}
+                {activeSection === "idp" && "Individual Development Plan"}
+                {activeSection === "certificates" && "My Certificates"}
+                {activeSection === "csc-exam" && "CSC Exam Prep"}
+                {activeSection === "assessments" && "Assessments"}
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Welcome back, {user?.name}!
@@ -757,9 +886,283 @@ export default function EmployeePortalPage() {
                 </Card>
               </div>
             )}
+
+            {/* IDP Section */}
+            {activeSection === "idp" && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-slate-500 dark:text-slate-400">{idpList.length} IDP record(s)</p>
+                  <Button onClick={() => setShowIdpModal(true)}>
+                    <TrendingUp className="h-4 w-4" /> Create IDP
+                  </Button>
+                </div>
+                {idpList.length === 0 ? (
+                  <Card variant="bordered">
+                    <CardContent className="py-16 text-center">
+                      <TrendingUp className="mx-auto h-12 w-12 mb-4 text-slate-300" />
+                      <p className="font-medium text-slate-600 dark:text-slate-300">No IDP submitted yet.</p>
+                      <p className="text-sm text-slate-400 mt-1">Create your Individual Development Plan to track competency growth.</p>
+                      <Button onClick={() => setShowIdpModal(true)} className="mt-4">Create My IDP</Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="space-y-4">
+                    {idpList.map((idp: any) => (
+                      <motion.div key={idp.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                        <Card variant="bordered">
+                          <CardContent className="p-5">
+                            <div className="flex items-start justify-between mb-3">
+                              <div>
+                                <p className="font-semibold text-slate-800 dark:text-white">IDP #{idp.id}</p>
+                                <p className="text-xs text-slate-400">{new Date(idp.created_at).toLocaleDateString()}</p>
+                              </div>
+                              <Badge variant={idp.status === "approved" ? "success" : idp.status === "disapproved" ? "danger" : idp.status === "pending_supervisor" ? "warning" : "default"}>
+                                {idp.status?.replace(/_/g, " ")}
+                              </Badge>
+                            </div>
+                            <div className="grid gap-3 md:grid-cols-2 text-sm">
+                              <div><p className="font-medium text-slate-600 dark:text-slate-400">Current Competencies</p><p className="text-slate-800 dark:text-white mt-1">{idp.current_competencies || "—"}</p></div>
+                              <div><p className="font-medium text-slate-600 dark:text-slate-400">Target Competencies</p><p className="text-slate-800 dark:text-white mt-1">{idp.target_competencies || "—"}</p></div>
+                              <div><p className="font-medium text-slate-600 dark:text-slate-400">Development Activities</p><p className="text-slate-800 dark:text-white mt-1">{idp.development_activities || "—"}</p></div>
+                              <div><p className="font-medium text-slate-600 dark:text-slate-400">Target Date</p><p className="text-slate-800 dark:text-white mt-1">{idp.target_date || "—"}</p></div>
+                            </div>
+                            {idp.supervisor_remarks && <div className="mt-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 p-3 text-sm"><span className="font-medium text-amber-700 dark:text-amber-400">Supervisor: </span>{idp.supervisor_remarks}</div>}
+                            {idp.hrdd_remarks && <div className="mt-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 p-3 text-sm"><span className="font-medium text-blue-700 dark:text-blue-400">HRDD: </span>{idp.hrdd_remarks}</div>}
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Certificates Section */}
+            {activeSection === "certificates" && (
+              <div className="space-y-6">
+                {certificates.length === 0 ? (
+                  <Card variant="bordered">
+                    <CardContent className="py-16 text-center">
+                      <Award className="mx-auto h-12 w-12 mb-4 text-slate-300" />
+                      <p className="font-medium text-slate-600 dark:text-slate-300">No certificates yet.</p>
+                      <p className="text-sm text-slate-400 mt-1">Complete a training or pass a CSC Exam quiz to earn certificates.</p>
+                      <Button onClick={() => setActiveSection("csc-exam")} variant="outline" className="mt-4">Go to CSC Exam Prep</Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {certificates.map((cert: any) => (
+                      <motion.div key={cert.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.25 }}>
+                        <Card variant="bordered" className="overflow-hidden">
+                          <div className="h-2 bg-gradient-to-r from-blue-500 to-indigo-600" />
+                          <CardContent className="p-5">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/30">
+                                <Award className="h-5 w-5" />
+                              </div>
+                              <div>
+                                <p className="font-bold text-slate-800 dark:text-white text-sm">{cert.training_title}</p>
+                                <p className="text-xs text-slate-400">{cert.cert_number}</p>
+                              </div>
+                            </div>
+                            <div className="space-y-1 text-xs text-slate-500 dark:text-slate-400">
+                              <p>Issued by: <span className="font-medium text-slate-700 dark:text-slate-300">{cert.issued_by}</span></p>
+                              <p>Date: <span className="font-medium text-slate-700 dark:text-slate-300">{new Date(cert.issued_at).toLocaleDateString()}</span></p>
+                            </div>
+                            <div className="mt-3"><Badge variant="success">Active</Badge></div>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* CSC Exam Prep Section */}
+            {activeSection === "csc-exam" && (
+              <div className="space-y-6">
+                <AnimatePresence mode="wait">
+                  {assessmentMode === "menu" && (
+                    <motion.div key="menu" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-6 hover:border-blue-400 hover:shadow-md transition-all cursor-pointer" onClick={() => handleLoadAssessments("flashcard")}>
+                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-900/30 mb-4">
+                            <Brain className="h-6 w-6" />
+                          </div>
+                          <h3 className="font-bold text-slate-800 dark:text-white mb-1">Flashcard Review</h3>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">Study key concepts with interactive flip cards.</p>
+                          <Button className="mt-4 w-full" onClick={() => handleLoadAssessments("flashcard")}>Start Flashcards</Button>
+                        </div>
+                        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-6 hover:border-emerald-400 hover:shadow-md transition-all cursor-pointer" onClick={() => handleLoadAssessments("quiz")}>
+                          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 mb-4">
+                            <GraduationCap className="h-6 w-6" />
+                          </div>
+                          <h3 className="font-bold text-slate-800 dark:text-white mb-1">Practice Quiz</h3>
+                          <p className="text-sm text-slate-500 dark:text-slate-400">Test your knowledge. Pass 75% to earn a certificate.</p>
+                          <Button variant="outline" className="mt-4 w-full" onClick={() => handleLoadAssessments("quiz")}>Start Quiz</Button>
+                        </div>
+                      </div>
+                      <Card variant="bordered">
+                        <CardHeader><CardTitle>Downloadable Study Materials</CardTitle></CardHeader>
+                        <CardContent className="space-y-3">
+                          {[
+                            { title: "CSC Professional Exam Reviewer", desc: "Comprehensive reviewer for Professional level", size: "PDF" },
+                            { title: "RA 6713 — Code of Conduct", desc: "Full text with annotations", size: "PDF" },
+                            { title: "RA 11032 — Ease of Doing Business", desc: "Full text with IRR", size: "PDF" },
+                            { title: "PRIME-HRM Framework Guide", desc: "CSC official guide", size: "PDF" },
+                          ].map((item) => (
+                            <div key={item.title} className="flex items-center gap-4 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100 text-red-600 dark:bg-red-900/30 flex-shrink-0">
+                                <FileText className="h-5 w-5" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-slate-800 dark:text-white text-sm">{item.title}</p>
+                                <p className="text-xs text-slate-400">{item.desc}</p>
+                              </div>
+                              <Badge variant="default">{item.size}</Badge>
+                            </div>
+                          ))}
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  )}
+
+                  {assessmentMode === "flashcard" && (
+                    <motion.div key="flashcard" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+                      <div className="flex items-center gap-3">
+                        <Button variant="outline" size="sm" onClick={() => setAssessmentMode("menu")}><ChevronLeft className="h-4 w-4" /> Back</Button>
+                        <span className="text-sm text-slate-500">{flashcardIndex + 1} / {flashcards.length}</span>
+                        <div className="flex-1 h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                          <motion.div className="h-full bg-blue-500 rounded-full" animate={{ width: `${((flashcardIndex + 1) / flashcards.length) * 100}%` }} transition={{ duration: 0.3 }} />
+                        </div>
+                      </div>
+                      {flashcards[flashcardIndex] && (
+                        <div className="perspective-1000">
+                          <motion.div
+                            className="relative cursor-pointer rounded-2xl border-2 border-blue-200 dark:border-blue-800 min-h-[220px] flex items-center justify-center p-8 text-center"
+                            style={{ background: flashcardFlipped ? "linear-gradient(135deg, #dbeafe, #eff6ff)" : "linear-gradient(135deg, #f0fdf4, #dcfce7)" }}
+                            onClick={() => setFlashcardFlipped(!flashcardFlipped)}
+                            animate={{ rotateY: flashcardFlipped ? 180 : 0 }}
+                            transition={{ duration: 0.4 }}
+                          >
+                            <AnimatePresence mode="wait">
+                              {!flashcardFlipped ? (
+                                <motion.div key="q" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                                  <p className="text-xs font-bold uppercase tracking-widest text-emerald-600 mb-3">Question</p>
+                                  <p className="text-lg font-bold text-slate-800">{flashcards[flashcardIndex].question}</p>
+                                  {flashcards[flashcardIndex].hint && <p className="text-sm text-slate-400 mt-3 italic">Hint: {flashcards[flashcardIndex].hint}</p>}
+                                  <p className="text-xs text-slate-400 mt-4">Click to reveal answer</p>
+                                </motion.div>
+                              ) : (
+                                <motion.div key="a" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                                  <p className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-3">Answer</p>
+                                  <p className="text-base text-slate-800">{flashcards[flashcardIndex].answer}</p>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </motion.div>
+                        </div>
+                      )}
+                      <div className="flex gap-3 justify-center">
+                        <Button variant="outline" onClick={() => { setFlashcardIndex(Math.max(0, flashcardIndex - 1)); setFlashcardFlipped(false); }} disabled={flashcardIndex === 0}><ChevronLeft className="h-4 w-4" /></Button>
+                        <Button variant="outline" onClick={() => setFlashcardFlipped(!flashcardFlipped)}><RotateCcw className="h-4 w-4" /> Flip</Button>
+                        <Button onClick={() => { setFlashcardIndex(Math.min(flashcards.length - 1, flashcardIndex + 1)); setFlashcardFlipped(false); }} disabled={flashcardIndex === flashcards.length - 1}><ChevronRight className="h-4 w-4" /></Button>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {assessmentMode === "quiz" && (
+                    <motion.div key="quiz" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+                      <div className="flex items-center gap-3">
+                        <Button variant="outline" size="sm" onClick={() => setAssessmentMode("menu")}><ChevronLeft className="h-4 w-4" /> Back</Button>
+                        <span className="text-sm font-medium text-slate-600 dark:text-slate-300">{examCategory} Quiz — {quizQuestions.length} questions</span>
+                      </div>
+                      {!quizSubmitted ? (
+                        <div className="space-y-4">
+                          {quizQuestions.map((q: any, i: number) => {
+                            const opts = typeof q.options_json === "string" ? JSON.parse(q.options_json) : q.options_json;
+                            return (
+                              <Card key={q.id} variant="bordered">
+                                <CardContent className="p-5">
+                                  <p className="font-semibold text-slate-800 dark:text-white mb-4"><span className="text-blue-600 mr-2">{i + 1}.</span>{q.question}</p>
+                                  <div className="space-y-2">
+                                    {opts.map((opt: string, j: number) => (
+                                      <button key={j} onClick={() => setQuizAnswers((prev) => ({ ...prev, [i]: j }))}
+                                        className={`w-full text-left rounded-xl border px-4 py-3 text-sm transition-all ${quizAnswers[i] === j ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 font-medium text-blue-700 dark:text-blue-300" : "border-slate-200 dark:border-slate-700 hover:border-blue-300 hover:bg-blue-50/50 dark:hover:bg-blue-900/10"}`}>
+                                        <span className="font-bold mr-2">{String.fromCharCode(65 + j)}.</span>{opt}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                          <Button onClick={handleSubmitQuiz} disabled={Object.keys(quizAnswers).length < quizQuestions.length} className="w-full">
+                            Submit Quiz ({Object.keys(quizAnswers).length}/{quizQuestions.length} answered)
+                          </Button>
+                        </div>
+                      ) : (
+                        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-4">
+                          <Card variant="bordered">
+                            <CardContent className="py-10 text-center">
+                              <div className={`mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full ${quizScore >= quizQuestions.length * 0.75 ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"}`}>
+                                {quizScore >= quizQuestions.length * 0.75 ? <CheckCircle className="h-10 w-10" /> : <XCircle className="h-10 w-10" />}
+                              </div>
+                              <p className="text-3xl font-bold text-slate-800 dark:text-white">{quizScore}/{quizQuestions.length}</p>
+                              <p className="text-lg font-medium mt-1 text-slate-600 dark:text-slate-300">{Math.round((quizScore / quizQuestions.length) * 100)}%</p>
+                              <p className={`mt-2 font-semibold ${quizScore >= quizQuestions.length * 0.75 ? "text-emerald-600" : "text-red-600"}`}>
+                                {quizScore >= quizQuestions.length * 0.75 ? "🎉 Passed! Certificate issued." : "Not passed. 75% required."}
+                              </p>
+                            </CardContent>
+                          </Card>
+                          <div className="space-y-3">
+                            {quizQuestions.map((q: any, i: number) => {
+                              const opts = typeof q.options_json === "string" ? JSON.parse(q.options_json) : q.options_json;
+                              const isCorrect = quizAnswers[i] === q.correct_answer;
+                              return (
+                                <Card key={q.id} variant="bordered" className={isCorrect ? "border-emerald-300 dark:border-emerald-700" : "border-red-300 dark:border-red-700"}>
+                                  <CardContent className="p-4">
+                                    <div className="flex items-start gap-2 mb-2">
+                                      {isCorrect ? <CheckCircle className="h-4 w-4 text-emerald-500 mt-0.5 flex-shrink-0" /> : <XCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />}
+                                      <p className="text-sm font-medium text-slate-800 dark:text-white">{q.question}</p>
+                                    </div>
+                                    <p className="text-xs text-emerald-600 dark:text-emerald-400 ml-6">✓ {opts[q.correct_answer]}</p>
+                                    {q.explanation && <p className="text-xs text-slate-400 ml-6 mt-1 italic">{q.explanation}</p>}
+                                  </CardContent>
+                                </Card>
+                              );
+                            })}
+                          </div>
+                          <div className="flex gap-3">
+                            <Button variant="outline" onClick={() => { setQuizAnswers({}); setQuizSubmitted(false); }} className="flex-1"><RotateCcw className="h-4 w-4" /> Retry</Button>
+                            {quizScore >= quizQuestions.length * 0.75 && <Button onClick={() => setActiveSection("certificates")} className="flex-1"><Award className="h-4 w-4" /> View Certificate</Button>}
+                          </div>
+                        </motion.div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
           </div>
         </main>
       </div>
+
+      {/* IDP Modal */}
+      <Modal isOpen={showIdpModal} onClose={() => setShowIdpModal(false)} title="Create Individual Development Plan" size="lg">
+        <form onSubmit={handleSubmitIdp} className="space-y-4">
+          <Textarea label="Current Competencies" value={idpForm.currentCompetencies} onChange={(e) => setIdpForm((p) => ({ ...p, currentCompetencies: e.target.value }))} rows={3} placeholder="Describe your current skills and competencies..." required />
+          <Textarea label="Target Competencies" value={idpForm.targetCompetencies} onChange={(e) => setIdpForm((p) => ({ ...p, targetCompetencies: e.target.value }))} rows={3} placeholder="What competencies do you want to develop?" required />
+          <Textarea label="Development Activities" value={idpForm.developmentActivities} onChange={(e) => setIdpForm((p) => ({ ...p, developmentActivities: e.target.value }))} rows={3} placeholder="List planned trainings, readings, or activities..." required />
+          <Input label="Target Completion Date" type="date" value={idpForm.targetDate} onChange={(e) => setIdpForm((p) => ({ ...p, targetDate: e.target.value }))} />
+          <Textarea label="Remarks (Optional)" value={idpForm.remarks} onChange={(e) => setIdpForm((p) => ({ ...p, remarks: e.target.value }))} rows={2} />
+          <div className="flex gap-3 pt-2">
+            <Button type="button" variant="outline" onClick={() => setShowIdpModal(false)} className="flex-1">Cancel</Button>
+            <Button type="submit" className="flex-1">Submit IDP</Button>
+          </div>
+        </form>
+      </Modal>
 
       <Modal
         isOpen={showNominationModal}

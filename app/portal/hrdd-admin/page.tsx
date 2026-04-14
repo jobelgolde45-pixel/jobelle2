@@ -20,8 +20,9 @@ import {
   Eye,
   Download,
 } from "lucide-react";
-import { fetchTrainings, fetchNominations, createNomination, updateNomination, fetchUsers, createUser } from "@/lib/api-client";
+import { fetchTrainings, fetchNominations, createNomination, updateNomination, fetchUsers, createUser, fetchJobAnalysisForms, fetchIdp, updateIdp, createCertificate } from "@/lib/api-client";
 import type { NominationForm, TrainingProgram, LocalTravelOrder, MemoDirective, TrainingType } from "@/types/portal";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface EmployeeAccount {
   id: string;
@@ -42,10 +43,10 @@ const OFFICES = [
   { value: "asset", label: "Asset Management Division" },
 ];
 
-type Section = "dashboard" | "nominations" | "trainings" | "accounts" | "evaluations" | "lto-database";
+type Section = "dashboard" | "nominations" | "trainings" | "accounts" | "evaluations" | "lto-database" | "jaf" | "idp" | "certificates";
 
 export default function HRDDAdminPortalPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoggingOut } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const { formatClock, formatDate } = useClock();
   const [nominations, setNominations] = useState<NominationForm[]>([]);
@@ -53,6 +54,17 @@ export default function HRDDAdminPortalPage() {
   const [accounts, setAccounts] = useState<EmployeeAccount[]>([]);
   const [ltos, setLtos] = useState<LocalTravelOrder[]>([]);
   const [memos, setMemos] = useState<MemoDirective[]>([]);
+  const [jafs, setJafs] = useState<any[]>([]);
+  const [idpItems, setIdpItems] = useState<any[]>([]);
+  const [allCertificates, setAllCertificates] = useState<any[]>([]);
+  const [selectedJaf, setSelectedJaf] = useState<any>(null);
+  const [selectedIdp, setSelectedIdp] = useState<any>(null);
+  const [showJafModal, setShowJafModal] = useState(false);
+  const [showIdpModal, setShowIdpModal] = useState(false);
+  const [showIssueCertModal, setShowIssueCertModal] = useState(false);
+  const [certForm, setCertForm] = useState({ userId: "", trainingTitle: "" });
+  const [jafRemarks, setJafRemarks] = useState("");
+  const [idpRemarks, setIdpRemarks] = useState("");
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
   const [showCreateTraining, setShowCreateTraining] = useState(false);
   const [showCreateAccount, setShowCreateAccount] = useState(false);
@@ -85,20 +97,20 @@ export default function HRDDAdminPortalPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [nominationsResult, trainingsResult, usersResult] = await Promise.all([
+        const [nominationsResult, trainingsResult, usersResult, jafResult, idpResult, certsResult] = await Promise.all([
           fetchNominations(),
           fetchTrainings(),
           fetchUsers(),
+          fetchJobAnalysisForms(),
+          fetchIdp(),
+          fetch("/api/certificates").then((r) => r.json()),
         ]);
-        if (nominationsResult.success) {
-          setNominations(nominationsResult.data as NominationForm[]);
-        }
-        if (trainingsResult.success) {
-          setTrainings(trainingsResult.data);
-        }
-        if (usersResult.success) {
-          setAccounts(usersResult.data as EmployeeAccount[]);
-        }
+        if (nominationsResult.success) setNominations(nominationsResult.data as NominationForm[]);
+        if (trainingsResult.success) setTrainings(trainingsResult.data);
+        if (usersResult.success) setAccounts(usersResult.data as EmployeeAccount[]);
+        if (jafResult.success) setJafs(jafResult.data);
+        if (idpResult.success) setIdpItems(idpResult.data);
+        if (certsResult.success) setAllCertificates(certsResult.data);
       } catch (error) {
         console.error("Failed to load data:", error);
       } finally {
@@ -182,6 +194,38 @@ export default function HRDDAdminPortalPage() {
       )
     );
     alert("Memo directive approved and forwarded to Signatory!");
+  };
+
+  const handleJafAction = async (action: "approve" | "reject") => {
+    if (!selectedJaf) return;
+    try {
+      await updateNomination({ id: selectedJaf.id, status: action === "approve" ? "Approved" : "Rejected", updatedAt: new Date().toISOString() });
+      setJafs((prev) => prev.map((j) => j.id === selectedJaf.id ? { ...j, status: action === "approve" ? "Approved" : "Rejected" } : j));
+      setShowJafModal(false);
+    } catch (e) { alert("Action failed."); }
+  };
+
+  const handleIdpAction = async (action: "approve" | "reject") => {
+    if (!selectedIdp) return;
+    try {
+      await updateIdp({ id: selectedIdp.id, status: action === "approve" ? "approved" : "disapproved", hrddRemarks: idpRemarks });
+      setIdpItems((prev) => prev.map((i) => i.id === selectedIdp.id ? { ...i, status: action === "approve" ? "approved" : "disapproved", hrdd_remarks: idpRemarks } : i));
+      setShowIdpModal(false);
+      setIdpRemarks("");
+    } catch (e) { alert("Action failed."); }
+  };
+
+  const handleIssueCertificate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const result = await createCertificate({ userId: certForm.userId, trainingTitle: certForm.trainingTitle, issuedBy: user?.name || "DOTr-HRDD" });
+      if (result.success) {
+        const updated = await fetch("/api/certificates").then((r) => r.json());
+        if (updated.success) setAllCertificates(updated.data);
+        setShowIssueCertModal(false);
+        setCertForm({ userId: "", trainingTitle: "" });
+      }
+    } catch (e) { alert("Failed to issue certificate."); }
   };
 
   const handleCreateTraining = async (e: React.FormEvent) => {
@@ -284,62 +328,40 @@ export default function HRDDAdminPortalPage() {
           </div>
 
           <nav className="space-y-2">
-            <button
-              onClick={() => setActiveSection("dashboard")}
-              className={`menu-item ${activeSection === "dashboard" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600" : "text-gray-600 dark:text-gray-400"}`}
-            >
-              <Users className="h-5 w-5" />
-              <span>Dashboard</span>
+            <button onClick={() => setActiveSection("dashboard")} className={`menu-item ${activeSection === "dashboard" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600" : "text-gray-600 dark:text-gray-400"}`}>
+              <Users className="h-5 w-5" /><span>Dashboard</span>
             </button>
-            <button
-              onClick={() => setActiveSection("nominations")}
-              className={`menu-item ${activeSection === "nominations" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600" : "text-gray-600 dark:text-gray-400"}`}
-            >
-              <FileText className="h-5 w-5" />
-              <span>Nominations</span>
-              {pendingNominations.length > 0 && (
-                <span className="ml-auto rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white">
-                  {pendingNominations.length}
-                </span>
-              )}
+            <button onClick={() => setActiveSection("nominations")} className={`menu-item ${activeSection === "nominations" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600" : "text-gray-600 dark:text-gray-400"}`}>
+              <FileText className="h-5 w-5" /><span>Nominations</span>
+              {pendingNominations.length > 0 && <span className="ml-auto rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white">{pendingNominations.length}</span>}
             </button>
-            <button
-              onClick={() => setActiveSection("evaluations")}
-              className={`menu-item ${activeSection === "evaluations" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600" : "text-gray-600 dark:text-gray-400"}`}
-            >
-              <Shield className="h-5 w-5" />
-              <span>Evaluations</span>
+            <button onClick={() => setActiveSection("jaf")} className={`menu-item ${activeSection === "jaf" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600" : "text-gray-600 dark:text-gray-400"}`}>
+              <FileText className="h-5 w-5" /><span>Job Analysis Forms</span>
+              {jafs.filter((j) => j.status === "Finalized").length > 0 && <span className="ml-auto rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">{jafs.filter((j) => j.status === "Finalized").length}</span>}
             </button>
-            <button
-              onClick={() => setActiveSection("trainings")}
-              className={`menu-item ${activeSection === "trainings" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600" : "text-gray-600 dark:text-gray-400"}`}
-            >
-              <BookOpen className="h-5 w-5" />
-              <span>Trainings</span>
+            <button onClick={() => setActiveSection("idp")} className={`menu-item ${activeSection === "idp" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600" : "text-gray-600 dark:text-gray-400"}`}>
+              <Shield className="h-5 w-5" /><span>IDP Approvals</span>
+              {idpItems.filter((i) => i.status === "pending_hrdd").length > 0 && <span className="ml-auto rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">{idpItems.filter((i) => i.status === "pending_hrdd").length}</span>}
             </button>
-            <button
-              onClick={() => setActiveSection("lto-database")}
-              className={`menu-item ${activeSection === "lto-database" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600" : "text-gray-600 dark:text-gray-400"}`}
-            >
-              <Database className="h-5 w-5" />
-              <span>LTO Database</span>
+            <button onClick={() => setActiveSection("evaluations")} className={`menu-item ${activeSection === "evaluations" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600" : "text-gray-600 dark:text-gray-400"}`}>
+              <Shield className="h-5 w-5" /><span>Evaluations</span>
             </button>
-            <button
-              onClick={() => setActiveSection("accounts")}
-              className={`menu-item ${activeSection === "accounts" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600" : "text-gray-600 dark:text-gray-400"}`}
-            >
-              <UserPlus className="h-5 w-5" />
-              <span>Account Control</span>
+            <button onClick={() => setActiveSection("certificates")} className={`menu-item ${activeSection === "certificates" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600" : "text-gray-600 dark:text-gray-400"}`}>
+              <Download className="h-5 w-5" /><span>Certificates</span>
+            </button>
+            <button onClick={() => setActiveSection("trainings")} className={`menu-item ${activeSection === "trainings" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600" : "text-gray-600 dark:text-gray-400"}`}>
+              <BookOpen className="h-5 w-5" /><span>Trainings</span>
+            </button>
+            <button onClick={() => setActiveSection("lto-database")} className={`menu-item ${activeSection === "lto-database" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600" : "text-gray-600 dark:text-gray-400"}`}>
+              <Database className="h-5 w-5" /><span>LTO Database</span>
+            </button>
+            <button onClick={() => setActiveSection("accounts")} className={`menu-item ${activeSection === "accounts" ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600" : "text-gray-600 dark:text-gray-400"}`}>
+              <UserPlus className="h-5 w-5" /><span>Account Control</span>
             </button>
           </nav>
 
           <div className="absolute bottom-8 left-5 right-5">
-            <button
-              onClick={logout}
-              className="w-full rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50"
-            >
-              Sign Out
-            </button>
+            <button onClick={logout} disabled={isLoggingOut} className="w-full rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-100 disabled:opacity-60 dark:bg-red-950/30 dark:text-red-400">{isLoggingOut ? "Signing out…" : "Sign Out"}</button>
           </div>
         </aside>
 
@@ -349,20 +371,21 @@ export default function HRDDAdminPortalPage() {
               <h2 className="text-xl font-bold text-gray-800 dark:text-white">
                 {activeSection === "dashboard" && "Executive Dashboard"}
                 {activeSection === "nominations" && "Nomination Approvals"}
+                {activeSection === "jaf" && "Job Analysis Forms"}
+                {activeSection === "idp" && "IDP Approvals"}
                 {activeSection === "trainings" && "Training Programs"}
                 {activeSection === "accounts" && "Account Control"}
                 {activeSection === "evaluations" && "HRDD Evaluations"}
                 {activeSection === "lto-database" && "LTO Database"}
+                {activeSection === "certificates" && "Certificate Management"}
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">Human Resource Development Division</p>
             </div>
-
             <div className="flex items-center gap-4">
               <div className="hidden border-r border-gray-200 pr-4 text-right dark:border-gray-700 sm:block">
                 <div className="font-bold text-gray-800 dark:text-white">{formatClock()}</div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">{formatDate()}</div>
               </div>
-
               <button onClick={toggleTheme} className="flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 hover:text-gray-700 dark:border-gray-800 dark:bg-gray-800">
                 {isDark ? "☀️" : "🌙"}
               </button>
@@ -766,6 +789,117 @@ export default function HRDDAdminPortalPage() {
                 </Card>
               </div>
             )}
+
+            {/* JAF Section */}
+            {activeSection === "jaf" && (
+              <div className="space-y-6">
+                <Card variant="bordered">
+                  <CardHeader><CardTitle>Job Analysis Forms — Final Review</CardTitle></CardHeader>
+                  <CardContent>
+                    {jafs.length === 0 ? (
+                      <p className="py-8 text-center text-slate-400">No Job Analysis Forms submitted yet.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {jafs.map((jaf: any) => (
+                          <motion.div key={jaf.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                            className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                            <div>
+                              <p className="font-semibold text-slate-800 dark:text-white">{jaf.fullname}</p>
+                              <p className="text-sm text-slate-500">{jaf.position_title} · {jaf.office_name}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={jaf.status === "Approved" ? "success" : jaf.status === "Rejected" ? "danger" : jaf.status === "Finalized" ? "info" : "warning"}>
+                                {jaf.status || "Pending"}
+                              </Badge>
+                              {jaf.status === "Finalized" && (
+                                <Button size="sm" onClick={() => { setSelectedJaf(jaf); setJafRemarks(""); setShowJafModal(true); }}>Final Review</Button>
+                              )}
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* IDP Approvals Section */}
+            {activeSection === "idp" && (
+              <div className="space-y-6">
+                <Card variant="bordered">
+                  <CardHeader><CardTitle>Individual Development Plans — HRDD Approval</CardTitle></CardHeader>
+                  <CardContent>
+                    {idpItems.length === 0 ? (
+                      <p className="py-8 text-center text-slate-400">No IDPs pending HRDD approval.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {idpItems.map((idp: any) => (
+                          <motion.div key={idp.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                            className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-700 p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                            <div>
+                              <p className="font-semibold text-slate-800 dark:text-white">IDP #{idp.id}</p>
+                              <p className="text-sm text-slate-500 line-clamp-1">{idp.target_competencies}</p>
+                              {idp.supervisor_remarks && <p className="text-xs text-amber-600 mt-1">Supervisor: {idp.supervisor_remarks}</p>}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={idp.status === "approved" ? "success" : idp.status === "disapproved" ? "danger" : idp.status === "pending_hrdd" ? "warning" : "default"}>
+                                {idp.status?.replace(/_/g, " ")}
+                              </Badge>
+                              {idp.status === "pending_hrdd" && (
+                                <Button size="sm" onClick={() => { setSelectedIdp(idp); setIdpRemarks(""); setShowIdpModal(true); }}>Review</Button>
+                              )}
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Certificates Section */}
+            {activeSection === "certificates" && (
+              <div className="space-y-6">
+                <div className="flex justify-end">
+                  <Button onClick={() => setShowIssueCertModal(true)}><Download className="h-4 w-4" /> Issue Certificate</Button>
+                </div>
+                <Card variant="bordered">
+                  <CardHeader><CardTitle>All Issued Certificates</CardTitle></CardHeader>
+                  <CardContent>
+                    {allCertificates.length === 0 ? (
+                      <p className="py-8 text-center text-slate-400">No certificates issued yet.</p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                          <thead>
+                            <tr className="border-b border-slate-200 dark:border-slate-700">
+                              <th className="pb-3 text-xs font-bold uppercase tracking-wider text-slate-500">Cert No.</th>
+                              <th className="pb-3 text-xs font-bold uppercase tracking-wider text-slate-500">Employee</th>
+                              <th className="pb-3 text-xs font-bold uppercase tracking-wider text-slate-500">Training</th>
+                              <th className="pb-3 text-xs font-bold uppercase tracking-wider text-slate-500">Issued</th>
+                              <th className="pb-3 text-xs font-bold uppercase tracking-wider text-slate-500">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                            {allCertificates.map((cert: any) => (
+                              <tr key={cert.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                <td className="py-3 font-mono text-xs text-slate-600 dark:text-slate-300">{cert.cert_number}</td>
+                                <td className="py-3 text-slate-800 dark:text-white">{cert.full_name || "—"}</td>
+                                <td className="py-3 text-slate-600 dark:text-slate-300">{cert.training_title}</td>
+                                <td className="py-3 text-xs text-slate-400">{new Date(cert.issued_at).toLocaleDateString()}</td>
+                                <td className="py-3"><Badge variant="success">{cert.status}</Badge></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </div>
         </main>
       </div>
@@ -974,6 +1108,60 @@ export default function HRDDAdminPortalPage() {
             </Button>
           </div>
         )}
+      </Modal>
+
+      {/* JAF Review Modal */}
+      <Modal isOpen={showJafModal} onClose={() => setShowJafModal(false)} title="Review Job Analysis Form" size="lg">
+        {selectedJaf && (
+          <div className="space-y-4">
+            <div className="rounded-xl bg-slate-50 dark:bg-slate-800 p-4 space-y-2 text-sm">
+              <p><span className="font-medium">Name:</span> {selectedJaf.fullname}</p>
+              <p><span className="font-medium">Position:</span> {selectedJaf.position_title}</p>
+              <p><span className="font-medium">Office:</span> {selectedJaf.office_name}</p>
+              <p><span className="font-medium">Purpose:</span> {selectedJaf.purpose}</p>
+              <p><span className="font-medium">Main Duties:</span> {selectedJaf.main_duties}</p>
+            </div>
+            <Textarea label="HRDD Remarks" value={jafRemarks} onChange={(e) => setJafRemarks(e.target.value)} rows={3} placeholder="Add final review remarks..." />
+            <div className="flex gap-3 pt-2">
+              <Button variant="outline" onClick={() => setShowJafModal(false)} className="flex-1">Cancel</Button>
+              <Button variant="outline" onClick={() => handleJafAction("reject")} className="flex-1 border-red-300 text-red-600 hover:bg-red-50"><XCircle className="h-4 w-4" /> Reject</Button>
+              <Button onClick={() => handleJafAction("approve")} className="flex-1"><CheckCircle className="h-4 w-4" /> Approve</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* IDP Approval Modal */}
+      <Modal isOpen={showIdpModal} onClose={() => setShowIdpModal(false)} title="IDP Final Approval" size="lg">
+        {selectedIdp && (
+          <div className="space-y-4">
+            <div className="rounded-xl bg-slate-50 dark:bg-slate-800 p-4 space-y-2 text-sm">
+              <p><span className="font-medium">Current Competencies:</span> {selectedIdp.current_competencies}</p>
+              <p><span className="font-medium">Target Competencies:</span> {selectedIdp.target_competencies}</p>
+              <p><span className="font-medium">Development Activities:</span> {selectedIdp.development_activities}</p>
+              {selectedIdp.supervisor_remarks && <p><span className="font-medium text-amber-600">Supervisor Remarks:</span> {selectedIdp.supervisor_remarks}</p>}
+            </div>
+            <Textarea label="HRDD Remarks" value={idpRemarks} onChange={(e) => setIdpRemarks(e.target.value)} rows={3} placeholder="Add HRDD approval remarks..." />
+            <div className="flex gap-3 pt-2">
+              <Button variant="outline" onClick={() => setShowIdpModal(false)} className="flex-1">Cancel</Button>
+              <Button variant="outline" onClick={() => handleIdpAction("reject")} className="flex-1 border-red-300 text-red-600 hover:bg-red-50"><XCircle className="h-4 w-4" /> Disapprove</Button>
+              <Button onClick={() => handleIdpAction("approve")} className="flex-1"><CheckCircle className="h-4 w-4" /> Approve IDP</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Issue Certificate Modal */}
+      <Modal isOpen={showIssueCertModal} onClose={() => setShowIssueCertModal(false)} title="Issue Certificate" size="md">
+        <form onSubmit={handleIssueCertificate} className="space-y-4">
+          <Select label="Employee" value={certForm.userId} onChange={(e) => setCertForm((p) => ({ ...p, userId: e.target.value }))}
+            options={accounts.map((a: any) => ({ value: String(a.id), label: a.full_name || a.name }))} placeholder="Select employee" required />
+          <Input label="Training Title" value={certForm.trainingTitle} onChange={(e) => setCertForm((p) => ({ ...p, trainingTitle: e.target.value }))} required />
+          <div className="flex gap-3 pt-2">
+            <Button type="button" variant="outline" onClick={() => setShowIssueCertModal(false)} className="flex-1">Cancel</Button>
+            <Button type="submit" className="flex-1">Issue Certificate</Button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

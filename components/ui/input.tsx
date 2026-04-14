@@ -14,7 +14,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label htmlFor={inputId} className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+          <label htmlFor={inputId} className="mb-2 block text-sm font-semibold tracking-[0.01em] text-slate-700 dark:text-slate-300">
             {label}
           </label>
         )}
@@ -28,10 +28,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={`
-              block w-full rounded-xl border-2 bg-white px-4 py-3 text-slate-900 outline-none transition-all duration-200
+              block min-h-[48px] w-full rounded-2xl border bg-white/95 px-4 py-3 text-slate-900 shadow-[0_8px_24px_rgba(15,23,42,0.05)] outline-none transition-all duration-200
               placeholder:text-slate-400
-              focus:border-blue-500 focus:ring-4 focus:ring-blue-100
-              dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-blue-400 dark:focus:ring-blue-900/30
+              focus:-translate-y-px focus:border-blue-500 focus:ring-4 focus:ring-blue-100
+              dark:bg-slate-800/95 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-blue-400 dark:focus:ring-blue-900/30
               disabled:cursor-not-allowed disabled:opacity-50
               ${icon ? "pl-11" : ""}
               ${error ? "border-red-500 focus:border-red-500 focus:ring-red-100" : "border-slate-200 dark:border-slate-700"}
@@ -61,7 +61,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <div className="w-full">
         {label && (
-          <label htmlFor={textareaId} className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+          <label htmlFor={textareaId} className="mb-2 block text-sm font-semibold tracking-[0.01em] text-slate-700 dark:text-slate-300">
             {label}
           </label>
         )}
@@ -69,10 +69,10 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           id={textareaId}
           className={`
-            block w-full rounded-xl border-2 bg-white px-4 py-3 text-slate-900 outline-none transition-all duration-200
+            block min-h-[120px] w-full rounded-2xl border bg-white/95 px-4 py-3 text-slate-900 shadow-[0_8px_24px_rgba(15,23,42,0.05)] outline-none transition-all duration-200
             placeholder:text-slate-400
-            focus:border-blue-500 focus:ring-4 focus:ring-blue-100
-            dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-blue-400 dark:focus:ring-blue-900/30
+            focus:-translate-y-px focus:border-blue-500 focus:ring-4 focus:ring-blue-100
+            dark:bg-slate-800/95 dark:text-white dark:placeholder:text-slate-500 dark:focus:border-blue-400 dark:focus:ring-blue-900/30
             disabled:cursor-not-allowed disabled:opacity-50
             ${error ? "border-red-500 focus:border-red-500 focus:ring-red-100" : "border-slate-200 dark:border-slate-700"}
             ${className}
@@ -102,7 +102,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className="w-full">
         {label && (
-          <label htmlFor={selectId} className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+          <label htmlFor={selectId} className="mb-2 block text-sm font-semibold tracking-[0.01em] text-slate-700 dark:text-slate-300">
             {label}
           </label>
         )}
@@ -110,9 +110,9 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           ref={ref}
           id={selectId}
           className={`
-            block w-full rounded-xl border-2 bg-white px-4 py-3 text-slate-900 outline-none transition-all duration-200
-            focus:border-blue-500 focus:ring-4 focus:ring-blue-100
-            dark:bg-slate-800 dark:text-white
+            block min-h-[48px] w-full rounded-2xl border bg-white/95 px-4 py-3 text-slate-900 shadow-[0_8px_24px_rgba(15,23,42,0.05)] outline-none transition-all duration-200
+            focus:-translate-y-px focus:border-blue-500 focus:ring-4 focus:ring-blue-100
+            dark:bg-slate-800/95 dark:text-white
             disabled:cursor-not-allowed disabled:opacity-50
             ${error ? "border-red-500 focus:border-red-500 focus:ring-red-100" : "border-slate-200 dark:border-slate-700"}
             ${className}

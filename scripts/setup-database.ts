@@ -488,6 +488,85 @@ async function ensureSchema() {
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )`,
 
+    // 29. certificates
+    `CREATE TABLE IF NOT EXISTS certificates (
+      id INTEGER PRIMARY KEY,
+      cert_number TEXT NOT NULL UNIQUE,
+      user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      training_program_id INTEGER REFERENCES training_programs(id) ON DELETE SET NULL,
+      training_title TEXT NOT NULL,
+      issued_by TEXT NOT NULL DEFAULT 'DOTr-HRDD',
+      signature_data_url TEXT,
+      issued_at TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'revoked')),
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+
+    // 30. idp (Individual Development Plan)
+    `CREATE TABLE IF NOT EXISTS idp (
+      id INTEGER PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      current_competencies TEXT,
+      target_competencies TEXT,
+      development_activities TEXT,
+      target_date TEXT,
+      remarks TEXT,
+      supervisor_remarks TEXT,
+      hrdd_remarks TEXT,
+      status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'pending_supervisor', 'pending_hrdd', 'approved', 'disapproved')),
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+
+    // 31. flashcards
+    `CREATE TABLE IF NOT EXISTS flashcards (
+      id INTEGER PRIMARY KEY,
+      category TEXT NOT NULL,
+      question TEXT NOT NULL,
+      answer TEXT NOT NULL,
+      hint TEXT,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+
+    // 32. quiz_questions
+    `CREATE TABLE IF NOT EXISTS quiz_questions (
+      id INTEGER PRIMARY KEY,
+      category TEXT NOT NULL,
+      question TEXT NOT NULL,
+      options_json TEXT NOT NULL,
+      correct_answer INTEGER NOT NULL,
+      explanation TEXT,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+
+    // 33. quiz_results
+    `CREATE TABLE IF NOT EXISTS quiz_results (
+      id INTEGER PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      category TEXT NOT NULL,
+      score INTEGER NOT NULL,
+      total_questions INTEGER NOT NULL,
+      answers_json TEXT,
+      passed INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+
+    // 34. assessment_progress
+    `CREATE TABLE IF NOT EXISTS assessment_progress (
+      id INTEGER PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      category TEXT NOT NULL,
+      assessment_type TEXT NOT NULL DEFAULT 'flashcard',
+      completed_items INTEGER NOT NULL DEFAULT 0,
+      total_items INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, category, assessment_type)
+    )`,
+
     // Create indexes
     `CREATE INDEX IF NOT EXISTS idx_users_office_id ON users(office_id)`,
     `CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)`,
@@ -521,6 +600,14 @@ async function ensureSchema() {
     `CREATE INDEX IF NOT EXISTS idx_notifications_is_read ON notifications(is_read)`,
     `CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_logs(entity_type, entity_id)`,
     `CREATE INDEX IF NOT EXISTS idx_audit_created_at ON audit_logs(created_at)`,
+    `CREATE INDEX IF NOT EXISTS idx_certificates_user_id ON certificates(user_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_certificates_cert_number ON certificates(cert_number)`,
+    `CREATE INDEX IF NOT EXISTS idx_idp_user_id ON idp(user_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_idp_status ON idp(status)`,
+    `CREATE INDEX IF NOT EXISTS idx_flashcards_category ON flashcards(category)`,
+    `CREATE INDEX IF NOT EXISTS idx_quiz_questions_category ON quiz_questions(category)`,
+    `CREATE INDEX IF NOT EXISTS idx_quiz_results_user_id ON quiz_results(user_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_assessment_progress_user_id ON assessment_progress(user_id)`,
   ];
 
   for (const statement of statements) {
@@ -618,6 +705,12 @@ async function verifySetup() {
     "mis_assistance_requests",
     "notifications",
     "audit_logs",
+    "certificates",
+    "idp",
+    "flashcards",
+    "quiz_questions",
+    "quiz_results",
+    "assessment_progress",
   ];
 
   for (const table of tables) {

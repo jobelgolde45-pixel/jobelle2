@@ -10,17 +10,17 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantStyles: Record<ButtonVariant, string> = {
-  primary: "bg-blue-600 text-white hover:bg-blue-700 shadow-sm",
-  secondary: "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700",
-  outline: "border-2 border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800",
+  primary: "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-[0_14px_30px_rgba(37,99,235,0.24)] hover:from-blue-700 hover:to-indigo-700",
+  secondary: "bg-slate-100 text-slate-700 shadow-sm hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700",
+  outline: "border border-slate-300 bg-white/90 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-800",
   ghost: "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800",
-  danger: "bg-red-600 text-white hover:bg-red-700 shadow-sm",
+  danger: "bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-[0_14px_30px_rgba(220,38,38,0.22)] hover:from-red-700 hover:to-rose-700",
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
-  sm: "px-3 py-1.5 text-sm",
-  md: "px-4 py-2 text-base",
-  lg: "px-6 py-3 text-lg",
+  sm: "min-h-[40px] px-3.5 py-2 text-sm",
+  md: "min-h-[46px] px-4.5 py-2.5 text-sm",
+  lg: "min-h-[52px] px-6 py-3 text-base",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -29,10 +29,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={`
-          inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200
-          disabled:opacity-50 disabled:cursor-not-allowed
+          inline-flex items-center justify-center gap-2 rounded-2xl font-semibold tracking-[0.01em] transition-all duration-200
+          disabled:cursor-not-allowed disabled:opacity-50
           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
           dark:focus:ring-offset-slate-900
+          hover:-translate-y-0.5
           ${variantStyles[variant]}
           ${sizeStyles[size]}
           ${className}

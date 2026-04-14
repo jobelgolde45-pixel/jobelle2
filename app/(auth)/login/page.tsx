@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-type PortalChoice = UserRole;
+type PortalChoice = Exclude<UserRole, "admin">;
 
 const portalIcons: Record<PortalChoice, React.ReactNode> = {
   employee: <UserIcon className="h-7 w-7" />,
@@ -50,7 +50,7 @@ const portalFeatures: Record<PortalChoice, string[]> = {
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, user, isLoading: authLoading } = useAuth();
   const [view, setView] = useState<"portal-select" | "login">("portal-select");
   const [selectedRole, setSelectedRole] = useState<PortalChoice | null>(null);
   const [username, setUsername] = useState("");
@@ -63,7 +63,6 @@ export default function LoginPage() {
 
   useEffect(() => {
     setMounted(true);
-    // Load saved username if exists
     const savedUsername = localStorage.getItem("rememberedUsername");
     if (savedUsername) {
       setUsername(savedUsername);
@@ -71,13 +70,17 @@ export default function LoginPage() {
     }
   }, []);
 
+  // Redirect already-authenticated users away from login
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace("/portal");
+    }
+  }, [user, authLoading, router]);
+
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
-
-    // Simulate network delay for better UX
-    await new Promise(resolve => setTimeout(resolve, 800));
 
     const result = await login(username, password);
     if (result.success) {

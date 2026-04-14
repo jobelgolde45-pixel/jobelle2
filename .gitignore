@@ -15,12 +15,30 @@
 # testing
 /coverage
 
+#planning
+/planning*
+
+#design
+/design*
+
 # next.js
 /.next/
 /out/
 
 # production
 /build
+
+#skills
+/skills*
+/agents*
+
+#commandcode
+/commandcode*
+
+#qwen
+/qwen*
+
+/todo*
 
 # misc
 .DS_Store

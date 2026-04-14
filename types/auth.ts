@@ -1,4 +1,4 @@
-export type UserRole = "employee" | "supervisor" | "hrdd_admin" | "signatory";
+export type UserRole = "employee" | "supervisor" | "hrdd_admin" | "signatory" | "admin";
 
 export interface AuthUser {
   id: string;

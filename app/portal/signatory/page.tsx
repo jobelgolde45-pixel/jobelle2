@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, type ReactNode } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme, useClock } from "@/lib/hooks";
 import { Card, CardHeader, CardTitle, CardContent, StatCard, Badge, Button, Modal } from "@/components/ui";
 import { Textarea } from "@/components/ui";
 import {
+  Briefcase,
+  Building2,
+  CalendarDays,
   Shield,
   FileSignature,
   CheckCircle,
@@ -14,6 +17,10 @@ import {
   ChevronDown,
   Upload,
   Eye,
+  FileText,
+  Mail,
+  Phone,
+  UserRound,
 } from "lucide-react";
 import type { PortalApplication } from "@/types/portal";
 import {
@@ -28,7 +35,7 @@ import {
 import type { MemoDirective, LocalTravelOrder } from "@/types/portal";
 
 export default function SignatoryPortalPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoggingOut } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const { formatClock, formatDate } = useClock();
   const [database, setDatabase] = useState(() => (typeof window !== "undefined" ? readPortalDatabase() : { applications: [] }));
@@ -37,6 +44,7 @@ export default function SignatoryPortalPage() {
   const [activeSection, setActiveSection] = useState<"dashboard" | "pending" | "archive" | "memos" | "ltos">("dashboard");
   const [expandedFolders, setExpandedFolders] = useState<string[]>([]);
   const [selectedBatch, setSelectedBatch] = useState<string | null>(null);
+  const [selectedApplication, setSelectedApplication] = useState<PortalApplication | null>(null);
   const [signatureFile, setSignatureFile] = useState<string | null>(null);
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [showDisapproveModal, setShowDisapproveModal] = useState(false);
@@ -68,6 +76,14 @@ export default function SignatoryPortalPage() {
     setExpandedFolders((prev) =>
       prev.includes(folderId) ? prev.filter((id) => id !== folderId) : [...prev, folderId]
     );
+  };
+
+  const handleOpenApplicationModal = (application: PortalApplication) => {
+    setSelectedApplication(application);
+  };
+
+  const handleCloseApplicationModal = () => {
+    setSelectedApplication(null);
   };
 
   const handleShowNomination = (application: PortalApplication) => {
@@ -313,9 +329,10 @@ export default function SignatoryPortalPage() {
           <div className="absolute bottom-8 left-5 right-5">
             <button
               onClick={logout}
-              className="w-full rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-100 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50"
+              disabled={isLoggingOut}
+              className="w-full rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600 hover:bg-red-100 disabled:opacity-60 dark:bg-red-950/30 dark:text-red-400 dark:hover:bg-red-950/50"
             >
-              Sign Out
+              {isLoggingOut ? "Signing out…" : "Sign Out"}
             </button>
           </div>
         </aside>
@@ -413,10 +430,10 @@ export default function SignatoryPortalPage() {
                                       <td className="py-2 text-slate-600 dark:text-slate-300">{app.office}</td>
                                       <td className="py-2">
                                         <button
-                                          onClick={() => handleShowNomination(app)}
+                                          onClick={() => handleOpenApplicationModal(app)}
                                           className="text-blue-600 hover:underline dark:text-blue-400"
                                         >
-                                          View Form
+                                          Review Details
                                         </button>
                                       </td>
                                     </tr>
@@ -471,9 +488,9 @@ export default function SignatoryPortalPage() {
                           <h4 className="font-bold text-slate-800 dark:text-white">{app.name}</h4>
                           <p className="text-sm text-slate-500">{app.title}</p>
                         </div>
-                        <Button size="sm" onClick={() => handleShowNomination(app)}>
+                        <Button size="sm" onClick={() => handleOpenApplicationModal(app)}>
                           <Eye className="h-4 w-4" />
-                          View
+                          Review
                         </Button>
                       </div>
                     ))}
@@ -592,6 +609,107 @@ export default function SignatoryPortalPage() {
         </main>
       </div>
 
+      <Modal
+        isOpen={Boolean(selectedApplication)}
+        onClose={handleCloseApplicationModal}
+        title={selectedApplication ? `Pending Signature Review: ${selectedApplication.name}` : "Pending Signature Review"}
+        description="Review the nomination details in-app before opening the printable document or signing the batch."
+        size="xl"
+      >
+        {selectedApplication ? (
+          <div className="space-y-6">
+            <div className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
+              <div className="rounded-[1.5rem] border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-5 shadow-sm dark:border-slate-800 dark:from-slate-900 dark:to-slate-950">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
+                      <FileSignature className="h-3.5 w-3.5" />
+                      Pending Signature
+                    </div>
+                    <h3 className="mt-3 font-display text-2xl font-bold text-slate-900 dark:text-white">
+                      {selectedApplication.title}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                      Confirm the nominee details, training schedule, and justification before signing the memo batch.
+                    </p>
+                  </div>
+                  <Badge variant="warning">{selectedApplication.status}</Badge>
+                </div>
+
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  <DetailTile icon={<UserRound className="h-4 w-4" />} label="Nominee" value={selectedApplication.name} />
+                  <DetailTile icon={<Briefcase className="h-4 w-4" />} label="Position" value={selectedApplication.position} />
+                  <DetailTile icon={<Building2 className="h-4 w-4" />} label="Office" value={selectedApplication.office} />
+                  <DetailTile icon={<CalendarDays className="h-4 w-4" />} label="Training Date" value={selectedApplication.date_course || "To be announced"} />
+                  <DetailTile icon={<Mail className="h-4 w-4" />} label="Email" value={selectedApplication.email || "Not provided"} />
+                  <DetailTile icon={<Phone className="h-4 w-4" />} label="Contact" value={selectedApplication.contact || "Not provided"} />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/90 p-5 dark:border-slate-800 dark:bg-slate-900/70">
+                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                    Submission Snapshot
+                  </p>
+                  <dl className="mt-4 space-y-3 text-sm">
+                    <MetaRow label="Date Filed" value={selectedApplication.date_filing || selectedApplication.date_submitted || "Not available"} />
+                    <MetaRow label="Venue" value={selectedApplication.venue || "To be announced"} />
+                    <MetaRow label="Competency" value={selectedApplication.competency || "Not specified"} />
+                    <MetaRow label="Supervisor" value={selectedApplication.supervisor || "Not specified"} />
+                  </dl>
+                </div>
+
+                <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-950/70">
+                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                    Next Actions
+                  </p>
+                  <div className="mt-4 space-y-3">
+                    <Button variant="outline" className="w-full justify-center" onClick={() => handleShowNomination(selectedApplication)}>
+                      <FileText className="h-4 w-4" />
+                      Open Printable Form
+                    </Button>
+                    <Button
+                      className="w-full justify-center"
+                      onClick={() => {
+                        setSelectedBatch(selectedApplication.title);
+                        handleCloseApplicationModal();
+                        setShowApproveModal(true);
+                      }}
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                      Sign This Batch
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+              <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-950/70">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                  Employment Details
+                </p>
+                <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <MetaCard label="Salary Grade" value={selectedApplication.salary_grade || "Not indicated"} />
+                  <MetaCard label="Service Length" value={selectedApplication.service_length || "Not indicated"} />
+                  <MetaCard label="Date Hired" value={selectedApplication.date_hired || "Not indicated"} />
+                  <MetaCard label="Gender" value={selectedApplication.gender || "Not indicated"} />
+                </dl>
+              </section>
+
+              <section className="rounded-[1.5rem] border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-950/70">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+                  Training Justification
+                </p>
+                <div className="mt-4 rounded-[1.25rem] bg-slate-50 p-4 text-sm leading-7 text-slate-600 dark:bg-slate-900 dark:text-slate-300">
+                  {selectedApplication.justification || "No justification was provided."}
+                </div>
+              </section>
+            </div>
+          </div>
+        ) : null}
+      </Modal>
+
       <Modal isOpen={showApproveModal} onClose={() => setShowApproveModal(false)} title="Sign & Approve Batch" size="lg">
         <div className="space-y-6">
           <p className="text-slate-600 dark:text-slate-300">
@@ -644,6 +762,54 @@ export default function SignatoryPortalPage() {
           </div>
         </div>
       </Modal>
+    </div>
+  );
+}
+
+function DetailTile({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-[1.25rem] border border-slate-200 bg-white/90 p-4 dark:border-slate-800 dark:bg-slate-950/70">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 rounded-xl bg-blue-50 p-2 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+            {label}
+          </p>
+          <p className="mt-1 text-sm font-semibold leading-6 text-slate-900 dark:text-white">
+            {value}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MetaRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b border-slate-200/80 pb-3 last:border-b-0 last:pb-0 dark:border-slate-800">
+      <dt className="text-slate-500 dark:text-slate-400">{label}</dt>
+      <dd className="text-right font-semibold text-slate-800 dark:text-white">{value}</dd>
+    </div>
+  );
+}
+
+function MetaCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-[1.25rem] bg-slate-50 p-4 dark:bg-slate-900">
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">
+        {label}
+      </p>
+      <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-white">{value}</p>
     </div>
   );
 }
